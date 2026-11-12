@@ -76,3 +76,4 @@ export function ApproachStepSection({ step }: ApproachStepSectionProps) {
     </section>
   );
 }
+
