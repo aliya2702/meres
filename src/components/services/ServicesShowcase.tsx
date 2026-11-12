@@ -6,6 +6,12 @@ import { ArrowUpRight } from "lucide-react";
 import { MeresMark } from "@/components/MeresMark";
 import { VeilLink } from "@/components/VeilLink";
 import { BRAND } from "@/content/copy";
+import {
+  INTRO_ANCHOR_TIME,
+  INTRO_UNITS,
+  ServicesIntro,
+  type ServicesIntroHandle,
+} from "@/components/services/ServicesIntro";
 import { servicesShowcase, type ServiceShowcaseItem } from "@/data/servicesShowcase";
 import { lenis, scrollToTarget } from "@/motion/smooth";
 import { splitText, type Split } from "@/motion/splitText";
@@ -21,7 +27,7 @@ const UNIT_PER_SERVICE = 8;
 const STAGE_B_OFFSET = 3.5;
 const STAGE_B_ANCHOR_OFFSET = 5.5;
 const END_HOLD = 1.5;
-const TOTAL_UNITS = servicesShowcase.length * UNIT_PER_SERVICE + END_HOLD;
+const SHOWCASE_UNITS = servicesShowcase.length * UNIT_PER_SERVICE + END_HOLD;
 
 type ServicesShowcaseProps = {
   variant: "home" | "page";
@@ -57,21 +63,34 @@ function createEmptyRefs(): ServiceRefs {
   };
 }
 
-function getThemeForTime(time: number): "light" | "dark" {
+function getThemeForTime(time: number, introUnits: number): "light" | "dark" {
+  if (introUnits > 0 && time < introUnits) {
+    return time < 7.5 ? "dark" : "light";
+  }
+  const serviceTime = Math.max(0, time - introUnits);
   const index = Math.min(
     servicesShowcase.length - 1,
-    Math.max(0, Math.floor(time / UNIT_PER_SERVICE)),
+    Math.max(0, Math.floor(serviceTime / UNIT_PER_SERVICE)),
   );
-  const localTime = time - index * UNIT_PER_SERVICE;
+  const localTime = serviceTime - index * UNIT_PER_SERVICE;
   if (localTime < STAGE_B_OFFSET) {
     return "dark";
   }
   return servicesShowcase[index].theme === "linen" ? "light" : "dark";
 }
 
-function getStageBPosition(st: ScrollTrigger, idx: number): number {
-  const labelTime = idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET;
-  return st.start + (labelTime / TOTAL_UNITS) * (st.end - st.start);
+function getStageBPosition(
+  st: ScrollTrigger,
+  idx: number,
+  introUnits: number,
+  totalUnits: number,
+): number {
+  const labelTime = introUnits + idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET;
+  return st.start + (labelTime / totalUnits) * (st.end - st.start);
+}
+
+function getIntroPosition(st: ScrollTrigger, totalUnits: number): number {
+  return st.start + (INTRO_ANCHOR_TIME / totalUnits) * (st.end - st.start);
 }
 
 function ServiceLayer({
@@ -330,26 +349,41 @@ function ServicePanel({
 export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
   const mode = useViewMode();
   const isPinned = mode === "desktop";
+  const hasIntro = variant === "page";
+  const introUnits = hasIntro ? INTRO_UNITS : 0;
+  const totalUnits = introUnits + SHOWCASE_UNITS;
   const stId = `services-showcase-${variant}`;
   const { hash } = useLocation();
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const introWrapRef = useRef<HTMLDivElement>(null);
+  const introRef = useRef<ServicesIntroHandle>(null);
   const serviceRefs = useRef<ServiceRefs[]>(servicesShowcase.map(() => createEmptyRefs()));
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(hasIntro ? -1 : 0);
   const lastScrolledHashRef = useRef<string>("");
+
+  const scrollToPos = useCallback((pos: number) => {
+    if (lenis) {
+      lenis.scrollTo(pos, { duration: 1.4, immediate: false });
+    } else {
+      scrollToTarget(pos, { offset: 0, duration: 1.4, immediate: false });
+    }
+  }, []);
+
+  const scrollToIntro = useCallback(() => {
+    if (!hasIntro) return;
+    const st = ScrollTrigger.getById(stId);
+    if (!st) return;
+    scrollToPos(getIntroPosition(st, totalUnits));
+  }, [hasIntro, scrollToPos, stId, totalUnits]);
 
   const scrollToService = useCallback(
     (idx: number) => {
       const st = ScrollTrigger.getById(stId);
       if (!st) return;
-      const pos = getStageBPosition(st, idx);
-      if (lenis) {
-        lenis.scrollTo(pos, { duration: 1.4, immediate: false });
-      } else {
-        scrollToTarget(pos, { offset: 0, duration: 1.4, immediate: false });
-      }
+      scrollToPos(getStageBPosition(st, idx, introUnits, totalUnits));
     },
-    [stId],
+    [introUnits, scrollToPos, stId, totalUnits],
   );
 
   // Desktop pinned choreography
@@ -364,17 +398,24 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
       let lastWidth = window.innerWidth;
       let tl: gsap.core.Timeline | null = null;
       let splits: Split[] = [];
-      let activeIdxCache = -1;
+      let cleanups: Array<() => void> = [];
+      let activeIdxCache = -99;
       let themeCache: "light" | "dark" | null = null;
 
       const applyInteractiveAndTheme = (time: number) => {
-        const idx = Math.min(
-          servicesShowcase.length - 1,
-          Math.max(0, Math.floor(time / UNIT_PER_SERVICE)),
-        );
+        const idx =
+          introUnits > 0 && time < introUnits
+            ? -1
+            : Math.min(
+                servicesShowcase.length - 1,
+                Math.max(0, Math.floor((time - introUnits) / UNIT_PER_SERVICE)),
+              );
         if (idx !== activeIdxCache) {
           activeIdxCache = idx;
           setActiveIndex(idx);
+          if (introWrapRef.current) {
+            introWrapRef.current.style.pointerEvents = idx === -1 ? "auto" : "none";
+          }
           serviceRefs.current.forEach((refs, sIdx) => {
             if (refs.section) {
               refs.section.style.pointerEvents = sIdx === idx ? "auto" : "none";
@@ -382,7 +423,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
           });
         }
 
-        const nextTheme = getThemeForTime(time);
+        const nextTheme = getThemeForTime(time, introUnits);
         if (nextTheme !== themeCache) {
           themeCache = nextTheme;
           root.dataset.theme = nextTheme;
@@ -394,8 +435,11 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
         root.getBoundingClientRect().top < window.innerHeight * 0.25 && window.scrollY < 4;
 
       const setInitialStates = () => {
+        if (hasIntro) {
+          introRef.current?.setInitialPinnedStates();
+        }
         serviceRefs.current.forEach((refs, i) => {
-          const skipEntryWipe = i === 0 && isFirstInView;
+          const skipEntryWipe = !hasIntro && i === 0 && isFirstInView;
           if (refs.layer) {
             gsap.set(refs.layer, {
               clipPath: skipEntryWipe ? "inset(0% 0% 0% 0%)" : "inset(100% 0% 0% 0%)",
@@ -430,11 +474,19 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
         tl?.scrollTrigger?.kill();
         tl?.kill();
         tl = null;
+        cleanups.forEach((fn) => fn());
+        cleanups = [];
         splits.forEach((s) => s.revert());
         splits = [];
       };
 
       const resetAllProps = () => {
+        if (hasIntro) {
+          introRef.current?.resetPinnedProps();
+        }
+        if (introWrapRef.current) {
+          introWrapRef.current.style.pointerEvents = "";
+        }
         serviceRefs.current.forEach((refs) => {
           const targets = [
             refs.layer,
@@ -467,21 +519,25 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
             id: stId,
             trigger: root,
             start: "top top",
-            end: () => `+=${TOTAL_UNITS * 0.28 * window.innerHeight}`,
+            end: () => `+=${totalUnits * 0.28 * window.innerHeight}`,
             pin: true,
             scrub: 0.8,
             anticipatePin: 1,
             invalidateOnRefresh: true,
-            onEnter: (self) => applyInteractiveAndTheme(self.progress * TOTAL_UNITS),
-            onEnterBack: (self) => applyInteractiveAndTheme(self.progress * TOTAL_UNITS),
-            onUpdate: (self) => applyInteractiveAndTheme(self.progress * TOTAL_UNITS),
+            onEnter: (self) => applyInteractiveAndTheme(self.progress * totalUnits),
+            onEnterBack: (self) => applyInteractiveAndTheme(self.progress * totalUnits),
+            onUpdate: (self) => applyInteractiveAndTheme(self.progress * totalUnits),
           },
         });
 
+        if (hasIntro && introRef.current) {
+          cleanups.push(introRef.current.buildIntroTimeline(tl, 0));
+        }
+
         servicesShowcase.forEach((item, i) => {
           const refs = serviceRefs.current[i];
-          const t = i * UNIT_PER_SERVICE;
-          const skipEntryWipe = i === 0 && isFirstInView;
+          const t = introUnits + i * UNIT_PER_SERVICE;
+          const skipEntryWipe = !hasIntro && i === 0 && isFirstInView;
 
           // Stage A: layer clip reveal and image scale/yPercent drift
           if (!skipEntryWipe && refs.layer) {
@@ -609,16 +665,14 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
         });
 
         // Hold B + 1.5 end hold after service 4 completes
-        tl.to({}, { duration: 1 }, TOTAL_UNITS - 1);
+        tl.to({}, { duration: 1 }, totalUnits - 1);
 
         applyInteractiveAndTheme(0);
         ScrollTrigger.refresh();
       };
 
       const waitForImages = async () => {
-        const imgs = serviceRefs.current
-          .map((r) => r.img)
-          .filter((el): el is HTMLImageElement => Boolean(el));
+        const imgs = Array.from(root.querySelectorAll("img"));
         await Promise.all(
           imgs.map(
             (img) =>
@@ -655,7 +709,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
             lastScrolledHashRef.current = currentHash;
             const st = ScrollTrigger.getById(stId);
             if (st) {
-              const targetPos = getStageBPosition(st, hashIdx);
+              const targetPos = getStageBPosition(st, hashIdx, introUnits, totalUnits);
               if (Math.abs(window.scrollY - targetPos) > 8) {
                 scrollToService(hashIdx);
               }
@@ -688,7 +742,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
     return () => {
       mm.revert();
     };
-  }, [isPinned, scrollToService, stId]);
+  }, [hasIntro, introUnits, isPinned, scrollToService, stId, totalUnits]);
 
   // Mobile & tablet (<1024px or coarse pointer) light reveals; reduced motion gets zero motion
   useEffect(() => {
@@ -916,21 +970,33 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
     scrollToService(hashIdx);
   }, [hash, isPinned, scrollToService, stId]);
 
+  const handleIntroPanelFocus = useCallback(() => {
+    if (!hasIntro || !isPinned) return;
+    const st = ScrollTrigger.getById(stId);
+    if (!st) return;
+    const currentTime = st.progress * totalUnits;
+    if (currentTime < 8.0 || currentTime > INTRO_UNITS + 0.2) {
+      scrollToIntro();
+    }
+  }, [hasIntro, isPinned, scrollToIntro, stId, totalUnits]);
+
   const handlePanelFocus = useCallback(
     (idx: number) => {
+      if (!isPinned) return;
       const st = ScrollTrigger.getById(stId);
       if (!st) return;
-      const currentTime = st.progress * TOTAL_UNITS;
-      const minVisibleTime = idx * UNIT_PER_SERVICE + STAGE_B_OFFSET + 0.5;
+      const currentTime = st.progress * totalUnits;
+      const serviceStart = introUnits + idx * UNIT_PER_SERVICE;
+      const minVisibleTime = serviceStart + STAGE_B_OFFSET + 0.5;
       const maxVisibleTime =
         idx === servicesShowcase.length - 1
-          ? TOTAL_UNITS + 0.5
-          : (idx + 1) * UNIT_PER_SERVICE + 0.2;
+          ? totalUnits + 0.5
+          : serviceStart + UNIT_PER_SERVICE + 0.2;
       if (currentTime < minVisibleTime || currentTime > maxVisibleTime) {
         scrollToService(idx);
       }
     },
-    [scrollToService, stId],
+    [introUnits, isPinned, scrollToService, stId, totalUnits],
   );
 
   return (
@@ -939,9 +1005,23 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
       data-theme={isPinned ? "dark" : undefined}
       className={isPinned ? "relative h-[100svh] w-full overflow-x-clip bg-forest" : undefined}
     >
+      {hasIntro && (
+        <div
+          ref={introWrapRef}
+          className={isPinned ? "absolute inset-0 z-[1]" : "relative"}
+        >
+          <ServicesIntro
+            ref={introRef}
+            isPinnedMode={isPinned}
+            onSelectService={isPinned ? (idx) => scrollToService(idx) : undefined}
+            onPanelFocus={handleIntroPanelFocus}
+          />
+        </div>
+      )}
+
       {servicesShowcase.map((item, idx) => {
         const refs = serviceRefs.current[idx];
-        const ratio = (idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET) / TOTAL_UNITS;
+        const ratio = (introUnits + idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET) / totalUnits;
 
         return (
           <section
@@ -954,7 +1034,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
             data-theme={isPinned ? undefined : item.theme === "green" ? "dark" : "light"}
             data-pin-st={isPinned ? stId : undefined}
             data-pin-ratio={isPinned ? String(ratio) : undefined}
-            style={isPinned ? { zIndex: idx + 1 } : undefined}
+            style={isPinned ? { zIndex: (hasIntro ? 2 : 1) + idx } : undefined}
             className={isPinned ? "absolute inset-0" : "relative scroll-mt-[96px]"}
           >
             <ServiceLayer item={item} isPinned={isPinned} refs={refs} />
@@ -979,8 +1059,26 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
       {isPinned && (
         <nav
           aria-label="Services index"
-          className="pointer-events-auto absolute left-[clamp(0.75rem,1.6vw,1.5rem)] top-[5.5rem] z-20 flex flex-col"
+          className="pointer-events-auto absolute left-[clamp(0.75rem,1.6vw,1.5rem)] top-[5.5rem] z-30 flex flex-col"
         >
+          {hasIntro && (
+            <button
+              type="button"
+              aria-label="Go to Services intro"
+              aria-current={activeIndex === -1 ? "step" : undefined}
+              onClick={scrollToIntro}
+              className="group flex h-6 w-12 items-center rounded-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-linen"
+            >
+              <span
+                aria-hidden="true"
+                className={`block h-px w-[40px] origin-left transition-[transform,background-color] duration-300 ease-out ${
+                  activeIndex === -1
+                    ? "scale-x-100 bg-linen"
+                    : "scale-x-[0.4] bg-taupe/70 group-hover:bg-taupe"
+                }`}
+              />
+            </button>
+          )}
           {servicesShowcase.map((item, idx) => {
             const isActive = activeIndex === idx;
             return (
