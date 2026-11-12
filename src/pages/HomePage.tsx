@@ -5,6 +5,12 @@ import { ArrowUpRight } from "lucide-react";
 import { VeilLink } from "@/components/VeilLink";
 import { TileCollage, type TileCollageHandle } from "@/components/TileCollage";
 import { StackSection, Panel } from "@/components/StackSection";
+import { DetailsSection } from "@/components/DetailsSection";
+import { MomentsStatementSection } from "@/components/MomentsStatementSection";
+import { UnderstandingSection } from "@/components/UnderstandingSection";
+import { ServicesShowcase } from "@/components/services/ServicesShowcase";
+import { YesSection } from "@/components/YesSection";
+import { ClosingSection } from "@/components/ClosingSection";
 import { BRAND, home } from "@/content/copy";
 import { revealLines, magnetic } from "@/motion/helpers";
 
@@ -60,44 +66,27 @@ function HeroContent() {
 
 export default function HomePage() {
   return (
-    <StackSection>
-      <Panel zIndex={1} background="var(--forest)">
-        <HeroContent />
-      </Panel>
-      <Panel zIndex={2} background="var(--linen)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-ink text-center">{home.details.title}</h2>
+    <>
+      <StackSection>
+        <Panel zIndex={1} background="var(--forest)">
+          <HeroContent />
+        </Panel>
+      </StackSection>
+      <DetailsSection />
+      <StackSection>
+        <MomentsStatementSection zIndex={3} />
+        <UnderstandingSection zIndex={4} />
+      </StackSection>
+      <section id="change" data-theme="dark" className="bg-forest text-linen">
+        <div className="px-5 pb-12 pt-24 md:px-10 md:pb-16 md:pt-28">
+          <h2 className="max-w-5xl font-serif text-[clamp(2.75rem,6vw,6.5rem)] leading-[1.0] text-linen">
+            {home.change.title}
+          </h2>
         </div>
-      </Panel>
-      <Panel zIndex={3} background="var(--forest)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-linen text-center">{home.understanding.title}</h2>
-        </div>
-      </Panel>
-      <Panel zIndex={4} background="var(--linen)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-ink text-center">{home.change.title}</h2>
-        </div>
-      </Panel>
-      <Panel zIndex={5} background="var(--ink)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-linen text-center">{home.yes.title}</h2>
-        </div>
-      </Panel>
-      <Panel zIndex={6} background="var(--forest)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-linen text-center">{home.closing.title}</h2>
-        </div>
-      </Panel>
-      <Panel zIndex={7} background="var(--linen)">
-        <div className="flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
-          <h2 className="headline-clamp font-serif text-ink">{home.closing.title}</h2>
-          <p className="lead-clamp font-serif text-ink/70">{home.closing.lead}</p>
-          <VeilLink to={BRAND.cta.href} data-cursor="link" className="inline-flex items-center rounded-full bg-forest px-5 py-3 text-sm text-linen">
-            {BRAND.cta.label}<ArrowUpRight className="ml-2" size={16} />
-          </VeilLink>
-        </div>
-      </Panel>
-    </StackSection>
+        <ServicesShowcase variant="home" />
+      </section>
+      <YesSection />
+      <ClosingSection />
+    </>
   );
 }

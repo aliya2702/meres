@@ -42,7 +42,7 @@ export function Header() {
     const syncTheme = () => {
       if (cancelled) return;
       const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-theme]"));
-      const active = sections.find((section) => {
+      const active = [...sections].reverse().find((section) => {
         const rect = section.getBoundingClientRect();
         return rect.top <= 64 && rect.bottom > 64;
       });

@@ -14,7 +14,14 @@ export function useVeilNavigate() {
     if (url.pathname === location.pathname) {
       if (url.hash) {
         history.replaceState(null, "", url.pathname + url.hash);
-        scrollToTarget(url.hash, { duration: 1.4 });
+        const targetId = url.hash.slice(1);
+        scrollToTarget(url.hash, {
+          duration: 1.3,
+          offset: -96,
+          onComplete: () => {
+            window.dispatchEvent(new CustomEvent("meres:anchor-replay", { detail: { id: targetId } }));
+          },
+        });
       } else scrollToTarget(0, { offset: 0 });
       return;
     }

@@ -33,12 +33,61 @@ export function initSmoothScroll(): () => void {
   };
 }
 
-export function scrollToTarget(target: string | number | HTMLElement, opts: { offset?: number; duration?: number; immediate?: boolean } = {}) {
+function resolveScrollY(el: HTMLElement, offset: number): number {
+  const panel = el.classList.contains("panel") ? el : el.closest<HTMLElement>(".stack-section > .panel");
+  const stack = panel?.closest<HTMLElement>(".stack-section");
+  if (panel && stack) {
+    const panels = Array.from(stack.children).filter((child): child is HTMLElement => child.classList.contains("panel"));
+    const idx = panels.indexOf(panel);
+    if (idx !== -1) {
+      const stackTop = stack.getBoundingClientRect().top + window.scrollY;
+      let sumPrev = 0;
+      for (let i = 0; i < idx; i += 1) {
+        sumPrev += panels[i].getBoundingClientRect().height;
+      }
+      return stackTop + sumPrev + offset;
+    }
+  }
+  return el.getBoundingClientRect().top + window.scrollY + offset;
+}
+
+export function scrollToTarget(
+  target: string | number | HTMLElement,
+  opts: { offset?: number; duration?: number; immediate?: boolean; onComplete?: () => void } = {},
+) {
   const offset = opts.offset ?? -96;
-  if (lenis) lenis.scrollTo(target as string | number | HTMLElement, { offset, duration: opts.duration ?? 1.4, immediate: opts.immediate, force: opts.immediate });
-  else {
-    const el = typeof target === "string" ? document.querySelector<HTMLElement>(target) : typeof target === "number" ? null : target;
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + offset, behavior: opts.immediate ? "auto" : "smooth" });
-    else if (typeof target === "number") window.scrollTo({ top: target });
+  const targetEl =
+    typeof target === "string"
+      ? document.querySelector<HTMLElement>(target)
+      : typeof target === "number"
+        ? null
+        : target;
+  const resolvedY =
+    typeof target === "number" ? target : targetEl ? resolveScrollY(targetEl, offset) : null;
+
+  if (lenis) {
+    if (resolvedY !== null) {
+      lenis.scrollTo(resolvedY, {
+        duration: opts.duration ?? 1.4,
+        immediate: opts.immediate,
+        force: opts.immediate,
+        onComplete: opts.onComplete,
+      });
+    } else {
+      lenis.scrollTo(target as string | number | HTMLElement, {
+        offset,
+        duration: opts.duration ?? 1.4,
+        immediate: opts.immediate,
+        force: opts.immediate,
+        onComplete: opts.onComplete,
+      });
+    }
+  } else {
+    if (resolvedY !== null) {
+      window.scrollTo({ top: resolvedY, behavior: opts.immediate ? "auto" : "smooth" });
+    }
+    if (opts.onComplete) {
+      window.setTimeout(opts.onComplete, opts.immediate ? 0 : 300);
+    }
   }
 }

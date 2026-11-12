@@ -65,9 +65,23 @@ export function revealLines(el: HTMLElement): () => void {
   };
 }
 
+const activeLineReveals = new WeakSet<HTMLElement>();
+const activeImageReveals = new WeakSet<HTMLElement>();
+const activeParallax = new WeakSet<HTMLElement>();
+
 export function initRevealLines(scope: ParentNode = document): () => void {
-  const targets = Array.from(scope.querySelectorAll<HTMLElement>('[data-reveal="lines"]'));
-  const cleanups = targets.map((el) => revealLines(el));
+  const targets = Array.from(scope.querySelectorAll<HTMLElement>('[data-reveal="lines"]')).filter((el) => {
+    if (activeLineReveals.has(el)) return false;
+    activeLineReveals.add(el);
+    return true;
+  });
+  const cleanups = targets.map((el) => {
+    const cleanup = revealLines(el);
+    return () => {
+      activeLineReveals.delete(el);
+      cleanup();
+    };
+  });
   return () => { cleanups.forEach((c) => c()); };
 }
 
@@ -85,7 +99,11 @@ export function wipeIn(el: HTMLElement, dir: Direction = "left", duration = 1.4)
 }
 
 export function revealImages(scope: ParentNode = document): () => void {
-  const targets = Array.from(scope.querySelectorAll<HTMLElement>("[data-reveal-image]"));
+  const targets = Array.from(scope.querySelectorAll<HTMLElement>("[data-reveal-image]")).filter((el) => {
+    if (activeImageReveals.has(el)) return false;
+    activeImageReveals.add(el);
+    return true;
+  });
   if (!targets.length) return () => {};
   const mm = gsap.matchMedia();
   mm.add("(prefers-reduced-motion: no-preference)", () => {
@@ -106,11 +124,18 @@ export function revealImages(scope: ParentNode = document): () => void {
       });
     });
   });
-  return () => { mm.revert(); };
+  return () => {
+    targets.forEach((el) => activeImageReveals.delete(el));
+    mm.revert();
+  };
 }
 
 export function initParallax(scope: ParentNode = document): () => void {
-  const targets = Array.from(scope.querySelectorAll<HTMLElement>("[data-parallax]"));
+  const targets = Array.from(scope.querySelectorAll<HTMLElement>("[data-parallax]")).filter((el) => {
+    if (activeParallax.has(el)) return false;
+    activeParallax.add(el);
+    return true;
+  });
   if (!targets.length) return () => {};
   const mm = gsap.matchMedia();
   mm.add("(min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
@@ -136,7 +161,10 @@ export function initParallax(scope: ParentNode = document): () => void {
       );
     });
   });
-  return () => { mm.revert(); };
+  return () => {
+    targets.forEach((el) => activeParallax.delete(el));
+    mm.revert();
+  };
 }
 
 export function initMotionAttributes(scope: ParentNode = document): () => void {
@@ -146,6 +174,51 @@ export function initMotionAttributes(scope: ParentNode = document): () => void {
     initParallax(scope),
   ];
   return () => { cleanups.forEach((c) => c()); };
+}
+
+const activePanelRises = new WeakSet<HTMLElement>();
+
+/**
+ * Yields the preceding panel (scale 1→0.96 + dark overlay 0→0.65) while `panel` rises into place.
+ */
+export function panelRise(panel: HTMLElement, prevPanel?: HTMLElement | null): () => void {
+  if (activePanelRises.has(panel)) return () => {};
+  const prev =
+    prevPanel ??
+    (panel.previousElementSibling instanceof HTMLElement ? panel.previousElementSibling : null);
+  if (!prev) return () => {};
+  activePanelRises.add(panel);
+
+  const mm = gsap.matchMedia();
+  mm.add("(min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
+    const prevInner = prev.querySelector<HTMLElement>("[data-panel-content]") || prev;
+    const prevDim = prev.querySelector<HTMLElement>("[data-panel-dim]");
+    const st = ScrollTrigger.create({
+      trigger: panel,
+      start: "top bottom",
+      end: "top top",
+      scrub: 1,
+      onUpdate: (self) => {
+        const p = self.progress;
+        gsap.set(prevInner, { scale: 1 - p * 0.04 });
+        if (prevDim) gsap.set(prevDim, { opacity: p * 0.65 });
+      },
+      onLeaveBack: () => {
+        gsap.set(prevInner, { scale: 1 });
+        if (prevDim) gsap.set(prevDim, { opacity: 0 });
+      },
+    });
+    return () => {
+      st.kill();
+      gsap.set(prevInner, { clearProps: "transform" });
+      if (prevDim) gsap.set(prevDim, { opacity: 0 });
+    };
+  });
+
+  return () => {
+    activePanelRises.delete(panel);
+    mm.revert();
+  };
 }
 
 export function drawLines(svg: SVGSVGElement): () => void {

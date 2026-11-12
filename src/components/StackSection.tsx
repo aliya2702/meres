@@ -1,7 +1,8 @@
-import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useRef, type ReactNode, type CSSProperties, type Ref } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { EASE, prefersReducedMotion } from "@/motion/tokens";
+import { panelRise } from "@/motion/helpers";
 import { images } from "@/content/images";
 import { splitText, type Split } from "@/motion/splitText";
 
@@ -94,43 +95,10 @@ export function StackSection({ children, className = "" }: { children: ReactNode
         });
 
         // Scrubbed scale + dark opacity overlay on previous panel while next covers it (desktop only)
-        const desktopMm = gsap.matchMedia();
-        desktopMm.add("(min-width: 1024px) and (pointer: fine)", () => {
-          const scrubTriggers: ScrollTrigger[] = [];
-          panels.forEach((panel, i) => {
-            if (i === 0) return;
-            const prev = panels[i - 1];
-            const prevInner = prev.querySelector<HTMLElement>("[data-panel-content]");
-            const prevDim = prev.querySelector<HTMLElement>("[data-panel-dim]");
-            if (!prevInner) return;
-            const st = ScrollTrigger.create({
-              trigger: panel,
-              start: "top bottom",
-              end: "top top",
-              scrub: 1,
-              onUpdate: (self) => {
-                const p = self.progress;
-                gsap.set(prevInner, { scale: 1 - p * 0.04 });
-                if (prevDim) gsap.set(prevDim, { opacity: p * 0.65 });
-              },
-              onLeaveBack: () => {
-                gsap.set(prevInner, { scale: 1 });
-                if (prevDim) gsap.set(prevDim, { opacity: 0 });
-              },
-            });
-            scrubTriggers.push(st);
-          });
-          return () => {
-            scrubTriggers.forEach((st) => st.kill());
-            panels.forEach((p) => {
-              const inner = p.querySelector<HTMLElement>("[data-panel-content]");
-              const dim = p.querySelector<HTMLElement>("[data-panel-dim]");
-              if (inner) gsap.set(inner, { clearProps: "transform" });
-              if (dim) gsap.set(dim, { opacity: 0 });
-            });
-          };
+        panels.forEach((panel, i) => {
+          if (i === 0 || panel.dataset.panelRise === "manual") return;
+          cleanups.push(panelRise(panel, panels[i - 1]));
         });
-        cleanups.push(() => desktopMm.revert());
 
         ScrollTrigger.refresh();
       };
@@ -310,12 +278,24 @@ export function TextRise({ children, className = "" }: { children: ReactNode; cl
  * (where StackSection looks for [data-anim-from] children to animate).
  */
 export function Panel({
-  children, className = "", zIndex = 0, background, theme,
-}: { children: ReactNode; className?: string; zIndex?: number; background?: string; theme?: "dark" | "light" }) {
+  children, className = "", zIndex = 0, background, theme, id, panelRise: panelRiseMode, panelRef,
+}: {
+  children: ReactNode;
+  className?: string;
+  zIndex?: number;
+  background?: string;
+  theme?: "dark" | "light";
+  id?: string;
+  panelRise?: "auto" | "manual";
+  panelRef?: Ref<HTMLElement>;
+}) {
   return (
     <section
+      ref={panelRef}
+      id={id}
       className={`panel ${className}`}
       data-theme={theme}
+      data-panel-rise={panelRiseMode === "manual" ? "manual" : undefined}
       style={{ zIndex, background: background || "var(--linen)" }}
     >
       <div data-panel-content className="relative min-h-[100svh] w-full lg:absolute lg:inset-0 lg:min-h-0">
