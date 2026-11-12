@@ -1,6 +1,6 @@
 export const EASE = {
-  reveal: "expo.out",
-  wipe: "power4.inOut",
+  reveal: "power3.out",
+  wipe: "power3.inOut",
   soft: "power3.out",
   iris: "power3.inOut",
 } as const;

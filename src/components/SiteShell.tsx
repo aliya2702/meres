@@ -1,19 +1,25 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { BRAND } from "@/content/copy";
 import { MeresMark } from "@/components/MeresMark";
 import { VeilLink, useVeilNavigate } from "@/components/VeilLink";
 import { magnetic } from "@/motion/helpers";
 import { lenis } from "@/motion/smooth";
 
+gsap.registerPlugin(ScrollTrigger);
+
 export function Header() {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const previousScroll = useRef(0);
   const ctaRef = useRef<HTMLAnchorElement>(null);
   const navigate = useVeilNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const mm = gsap.matchMedia();
@@ -28,6 +34,47 @@ export function Header() {
     });
     return () => mm.revert();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const triggers: ScrollTrigger[] = [];
+
+    const syncTheme = () => {
+      if (cancelled) return;
+      const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-theme]"));
+      const active = sections.find((section) => {
+        const rect = section.getBoundingClientRect();
+        return rect.top <= 64 && rect.bottom > 64;
+      });
+      setTheme(active?.dataset.theme === "dark" ? "dark" : "light");
+    };
+
+    const rafId = requestAnimationFrame(() => {
+      if (cancelled) return;
+      const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-theme]"));
+      syncTheme();
+
+      sections.forEach((section) => {
+        triggers.push(
+          ScrollTrigger.create({
+            trigger: section,
+            start: "top 64px",
+            end: "bottom 64px",
+            onEnter: syncTheme,
+            onEnterBack: syncTheme,
+            onLeave: syncTheme,
+            onLeaveBack: syncTheme,
+          }),
+        );
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      triggers.forEach((t) => t.kill());
+    };
+  }, [pathname]);
 
   useEffect(() => {
     if (!ctaRef.current) return;
@@ -72,19 +119,21 @@ export function Header() {
     void navigate(BRAND.cta.href);
   };
 
+  const isDark = theme === "dark";
+
   return (
     <>
       <header className={`fixed inset-x-0 top-0 z-40 px-5 py-5 transition-transform duration-500 md:px-10 ${hidden && !open ? "-translate-y-full" : "translate-y-0"}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-taupe/30 bg-linen/85 px-4 py-3 backdrop-blur-md md:px-6">
-          <VeilLink to="/" aria-label="MERES home" data-cursor="link" className="text-forest">
+        <div className={`mx-auto flex max-w-7xl items-center justify-between rounded-full border px-4 py-3 backdrop-blur-md md:px-6 ${isDark ? "border-linen/25 bg-forest/85 text-linen" : "border-taupe/30 bg-linen/85 text-ink"}`}>
+          <VeilLink to="/" aria-label="MERES home" data-cursor="link" className={isDark ? "text-linen" : "text-ink"}>
             <MeresMark className="h-9 w-11" />
           </VeilLink>
           <div className="flex items-center gap-3">
-            <button ref={buttonRef} type="button" aria-expanded={open} aria-controls="site-menu" onClick={() => setOpen((value) => !value)} className="inline-flex items-center gap-2 rounded-full border border-forest/30 px-4 py-2 text-xs uppercase tracking-[0.16em] text-forest transition-colors hover:bg-forest hover:text-linen">
+            <button ref={buttonRef} type="button" aria-expanded={open} aria-controls="site-menu" onClick={() => setOpen((value) => !value)} className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs uppercase tracking-[0.16em] ${isDark ? "border-linen/30 text-linen hover:bg-linen hover:text-forest" : "border-ink/30 text-ink hover:bg-ink hover:text-linen"}`}>
               {open ? <X size={15} /> : <Menu size={15} />}
               <span>Menu</span>
             </button>
-            <VeilLink ref={ctaRef} to={BRAND.cta.href} data-cursor="link" className="hidden items-center gap-1 rounded-full bg-forest px-4 py-2 text-xs uppercase tracking-[0.12em] text-linen md:inline-flex">
+            <VeilLink ref={ctaRef} to={BRAND.cta.href} data-cursor="link" className={`hidden items-center gap-1 rounded-full px-4 py-2 text-xs uppercase tracking-[0.12em] md:inline-flex ${isDark ? "bg-linen text-forest" : "bg-forest text-linen"}`}>
               {BRAND.cta.label}<ArrowUpRight size={14} />
             </VeilLink>
           </div>
@@ -99,8 +148,15 @@ function MenuDialog({ onClose, onContact }: { onClose: () => void; onContact: ()
   const panel = useRef<HTMLDivElement>(null);
   const links = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (panel.current) gsap.fromTo(panel.current, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "power4.inOut" });
-    if (links.current) gsap.fromTo(links.current.children, { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.07, delay: 0.65, ease: "power3.out" });
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      if (panel.current) gsap.fromTo(panel.current, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "power3.inOut" });
+      if (links.current) gsap.fromTo(links.current.children, { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.07, delay: 0.65, ease: "power3.out" });
+    });
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      if (panel.current) gsap.fromTo(panel.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" });
+    });
+    return () => mm.revert();
   }, []);
   return (
     <div id="site-menu" data-menu-dialog role="dialog" aria-modal="true" aria-label="Site menu" className="fixed inset-0 z-30 grid bg-forest text-linen md:grid-cols-2">

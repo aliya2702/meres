@@ -20,6 +20,10 @@ export function useVeilNavigate() {
     }
     lenis?.stop();
     await veil.cover(origin);
+    ScrollTrigger.getAll().forEach((trigger) => {
+      const target = trigger.trigger as Element | undefined;
+      if (!target || document.getElementById("main")?.contains(target)) trigger.kill();
+    });
     navigate(url.pathname + url.hash);
     await raf2();
     window.scrollTo(0, 0);

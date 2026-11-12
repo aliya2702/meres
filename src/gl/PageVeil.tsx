@@ -61,7 +61,7 @@ export function PageVeil({ color = "#2C382A", rim = "#AD9680", durationIn = 0.95
         if (out === 1 && markEl) {
           gsap.set(markEl, { opacity: 0, clipPath: "inset(0 0 0 0)" });
         }
-        gsap.to(state, { p: 1, duration: dur, ease: "power2.inOut", onUpdate: draw, onComplete: () => { if (out === 1) { cv.style.display = "none"; if (markEl) gsap.set(markEl, { opacity: 0 }); } resolve(); } });
+        gsap.to(state, { p: 1, duration: dur, ease: "power3.inOut", onUpdate: draw, onComplete: () => { if (out === 1) { cv.style.display = "none"; if (markEl) gsap.set(markEl, { opacity: 0 }); } resolve(); } });
       });
 
     api = {

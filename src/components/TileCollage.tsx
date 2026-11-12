@@ -73,7 +73,7 @@ export const TileCollage = forwardRef<TileCollageHandle, Props>(function TileCol
               gsap.to(tilesRef.current, {
                 clipPath: "inset(0 0 0 0)",
                 duration: 0.9,
-                ease: "power4.out",
+                ease: "power3.inOut",
                 stagger: { each: 0.05, from: "random" },
               });
             },
@@ -83,28 +83,25 @@ export const TileCollage = forwardRef<TileCollageHandle, Props>(function TileCol
       }
 
       if (idleDrift && root.current) {
-        const ctx = gsap.context(() => {
-          const cols = columnsRef.current.filter(Boolean);
-          let raf = 0;
-          let startTime = 0;
-          let inView = false;
-          const tick = () => {
-            if (!inView) { raf = 0; return; }
-            const t = (performance.now() - startTime) / 1000;
-            cols.forEach((col, i) => {
-              const dir = i === 1 ? 1 : -1;
-              const speed = 40 + i * 10;
-              gsap.set(col, { y: Math.sin(t * 0.4 + i * 1.5) * dir * speed });
-            });
-            raf = requestAnimationFrame(tick);
-          };
-          const start = () => { if (!inView) { inView = true; startTime = performance.now(); raf = requestAnimationFrame(tick); } };
-          const stop = () => { inView = false; if (raf) cancelAnimationFrame(raf); raf = 0; };
-          const obs = new IntersectionObserver(([e]) => e.isIntersecting ? start() : stop(), { threshold: 0.05 });
-          if (root.current) obs.observe(root.current);
-          return () => { stop(); obs.disconnect(); };
-        }, root.current);
-        cleanups.push(() => ctx.revert());
+        const cols = columnsRef.current.filter(Boolean);
+        let raf = 0;
+        let startTime = 0;
+        let inView = false;
+        const tick = () => {
+          if (!inView) { raf = 0; return; }
+          const t = (performance.now() - startTime) / 1000;
+          cols.forEach((col, i) => {
+            const dir = i === 1 ? 1 : -1;
+            const speed = 40 + i * 10;
+            gsap.set(col, { y: Math.sin(t * 0.4 + i * 1.5) * dir * speed });
+          });
+          raf = requestAnimationFrame(tick);
+        };
+        const start = () => { if (!inView) { inView = true; startTime = performance.now(); raf = requestAnimationFrame(tick); } };
+        const stop = () => { inView = false; if (raf) cancelAnimationFrame(raf); raf = 0; };
+        const obs = new IntersectionObserver(([e]) => e.isIntersecting ? start() : stop(), { threshold: 0.05 });
+        obs.observe(root.current);
+        cleanups.push(() => { stop(); obs.disconnect(); });
       }
 
       if (scrollParallax && root.current) {
@@ -132,16 +129,17 @@ export const TileCollage = forwardRef<TileCollageHandle, Props>(function TileCol
     if (typeof ref === "function") return;
     ref.current = {
       converge: () => {
-        gsap.to(root.current, { rotation: 0, duration: 1.4, ease: "power4.inOut" });
-        gsap.to(tilesRef.current, { x: 0, y: 0, duration: 1.4, ease: "power4.inOut", stagger: 0.04 });
+        gsap.to(root.current, { rotation: 0, duration: 1.4, ease: "power3.inOut" });
+        gsap.to(tilesRef.current, { x: 0, y: 0, duration: 1.4, ease: "power3.inOut", stagger: 0.04 });
       },
       diverge: () => {
-        gsap.to(root.current, { rotation, duration: 1.4, ease: "power4.inOut" });
+        gsap.to(root.current, { rotation, duration: 1.4, ease: "power3.inOut" });
       },
     };
   }, [ref, rotation]);
 
   const cols = [0, 1, 2];
+  tilesRef.current = [];
 
   return (
     <div ref={root} className={`relative ${className}`} style={{ transform: `rotate(${rotation}deg)` }}>
@@ -158,7 +156,7 @@ export const TileCollage = forwardRef<TileCollageHandle, Props>(function TileCol
                 <div
                   key={`${tile.imageId}-${tile.focal}`}
                   ref={(el) => { if (el) tilesRef.current.push(el); }}
-                  className="relative aspect-[3/4] overflow-hidden"
+                  className="relative aspect-[3/4] overflow-clip"
                 >
                   <img
                     src={image.src["1672"]}
@@ -171,7 +169,7 @@ export const TileCollage = forwardRef<TileCollageHandle, Props>(function TileCol
                     style={{ objectPosition: focalToObjectPosition(tile.focal) }}
                   />
                   {labelChip && i === 0 && (
-                    <span className="absolute bottom-2 left-2 z-10 bg-ink/80 px-2 py-1 text-[1.1667rem] leading-none text-linen backdrop-blur-sm">
+                    <span className="absolute bottom-2 left-2 z-10 bg-hero-ink/80 px-2 py-1 font-sans text-[1.1667rem] leading-none text-hero-linen backdrop-blur-sm">
                       {image.label}
                     </span>
                   )}

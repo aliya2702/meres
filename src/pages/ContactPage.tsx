@@ -7,7 +7,7 @@ import { ReadMoreDrawer } from "@/components/ReadMoreDrawer";
 import { StackSection, Panel } from "@/components/StackSection";
 import { magnetic, revealLines } from "@/motion/helpers";
 import { scrollToTarget } from "@/motion/smooth";
-import { EASE } from "@/motion/tokens";
+import { EASE, prefersReducedMotion } from "@/motion/tokens";
 import { contact } from "@/content/copy";
 import { images } from "@/content/images";
 
@@ -56,8 +56,8 @@ function submitInquiry(payload: Record<string, string>): Promise<boolean> {
 
 function FieldGroup({ label, id, required, error, children }: { label: string; id: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
-    <div className="field-wrap">
-      <label htmlFor={id} className="field-label text-sm text-linen/70 transition-all duration-[350ms]">{label}{required && " *"}</label>
+    <div className="field-wrap group">
+      <label htmlFor={id} className="field-label inline-block text-sm text-linen/70 group-focus-within:text-taupe">{label}{required && " *"}</label>
       {children}
       {error && <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs text-red-300">{error}</p>}
     </div>
@@ -121,11 +121,11 @@ export default function ContactPage() {
       setStatus("error");
       setStatusMessage(contact.error);
       focusFirstInvalid(newErrors);
-      if (window.matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+      if (!prefersReducedMotion()) {
         (["name", "email", "project"] as const).forEach((key) => {
           if (newErrors[key]) {
             const el = document.getElementById(fieldIds[key]);
-            if (el) gsap.fromTo(el, { x: -6 }, { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)" });
+            if (el) gsap.fromTo(el, { x: -6 }, { x: 0, duration: 0.35, ease: EASE.soft });
           }
         });
       }
@@ -134,7 +134,7 @@ export default function ContactPage() {
 
     setStatus("sending");
     setStatusMessage("");
-    if (buttonWrapRef.current) gsap.to(buttonWrapRef.current, { opacity: 0.4, duration: 0.2 });
+    if (buttonWrapRef.current) gsap.to(buttonWrapRef.current, { opacity: 0.4, duration: 0.2, ease: EASE.soft });
 
     const payload: Record<string, string> = {
       name: data.name.trim(),
@@ -153,27 +153,31 @@ export default function ContactPage() {
     if (!ok) {
       setStatus("error");
       setStatusMessage(contact.error);
-      if (buttonWrapRef.current) gsap.to(buttonWrapRef.current, { opacity: 1, duration: 0.3 });
+      if (buttonWrapRef.current) gsap.to(buttonWrapRef.current, { opacity: 1, duration: 0.25, ease: EASE.soft });
       return;
     }
 
     setStatus("success");
-    if (window.matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    if (!prefersReducedMotion()) {
       const fields = Array.from(formRef.current?.querySelectorAll<HTMLElement>(".field-wrap") || []);
       gsap.to(fields, {
-        y: -20, opacity: 0, duration: 0.6, ease: "power3.in", stagger: 0.04,
+        y: -20, opacity: 0, duration: 0.6, ease: EASE.soft, stagger: 0.04,
         onComplete: () => {
           if (successRef.current) {
             successRef.current.style.display = "block";
-            revealLines(successRef.current.querySelector("p")!)();
             const msg = successRef.current.querySelector<HTMLElement>("p");
-            if (msg) { msg.tabIndex = -1; msg.focus({ preventScroll: true }); }
+            if (msg) {
+              gsap.fromTo(msg, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: EASE.reveal });
+              msg.tabIndex = -1;
+              msg.focus({ preventScroll: true });
+            }
           }
         },
       });
     } else {
       if (successRef.current) {
         successRef.current.style.display = "block";
+        gsap.fromTo(successRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: EASE.soft });
         const msg = successRef.current.querySelector<HTMLElement>("p");
         if (msg) { msg.tabIndex = -1; msg.focus({ preventScroll: true }); }
       }
@@ -182,47 +186,42 @@ export default function ContactPage() {
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
+    if (titleRef.current) cleanups.push(revealLines(titleRef.current));
+    if (headingRef.current) cleanups.push(revealLines(headingRef.current));
+    if (submitRef.current) cleanups.push(magnetic(submitRef.current));
+
     const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", async () => {
-      await document.fonts.ready;
-      if (titleRef.current) cleanups.push(revealLines(titleRef.current));
-      if (headingRef.current) cleanups.push(revealLines(headingRef.current));
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
       const fields = formRef.current?.querySelectorAll<HTMLElement>(".field-wrap");
-      if (fields) {
-        const ctx = gsap.context(() => {
-          gsap.fromTo(fields, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: EASE.soft, stagger: 0.07, delay: 0.4 });
-        });
-        cleanups.push(() => ctx.revert());
+      if (fields && fields.length) {
+        gsap.fromTo(fields, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: EASE.soft, stagger: 0.07, delay: 0.4 });
       }
     });
-    return () => { cleanups.forEach((c) => c()); mm.revert(); };
-  }, []);
 
-  useEffect(() => {
-    if (submitRef.current) return magnetic(submitRef.current);
-    return;
+    return () => {
+      cleanups.forEach((c) => c());
+      mm.revert();
+    };
   }, []);
 
   const handleButtonEnter = useCallback(() => {
-    if (!fillRef.current || !window.matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
-    gsap.to(fillRef.current, { clipPath: "inset(0 0 0 0)", duration: 0.5, ease: EASE.soft });
+    if (!fillRef.current || prefersReducedMotion()) return;
+    gsap.to(fillRef.current, { clipPath: "inset(0 0 0 0)", duration: 0.5, ease: EASE.wipe });
   }, []);
   const handleButtonLeave = useCallback(() => {
-    if (!fillRef.current || !window.matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
-    gsap.to(fillRef.current, { clipPath: "inset(0 100% 0 0)", duration: 0.5, ease: EASE.soft });
+    if (!fillRef.current || prefersReducedMotion()) return;
+    gsap.to(fillRef.current, { clipPath: "inset(0 100% 0 0)", duration: 0.5, ease: EASE.wipe });
   }, []);
 
   const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const el = e.target;
-    gsap.to(el, { borderBottomColor: "#EFE9DE", duration: 0.5, ease: EASE.soft });
-    const label = el.closest(".field-wrap")?.querySelector(".field-label");
-    if (label) gsap.to(label, { y: -4, fontSize: "0.75rem", color: "#AD9680", duration: 0.35, ease: EASE.soft });
+    if (prefersReducedMotion()) return;
+    const label = e.target.closest(".field-wrap")?.querySelector(".field-label");
+    if (label) gsap.to(label, { y: -4, duration: 0.35, ease: EASE.soft });
   }, []);
   const handleFieldBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const el = e.target;
-    gsap.to(el, { borderBottomColor: "rgba(239, 233, 222, 0.25)", duration: 0.5, ease: EASE.soft });
-    const label = el.closest(".field-wrap")?.querySelector(".field-label");
-    if (label) gsap.to(label, { y: 0, fontSize: "", color: "", duration: 0.35, ease: EASE.soft });
+    if (prefersReducedMotion()) return;
+    const label = e.target.closest(".field-wrap")?.querySelector(".field-label");
+    if (label) gsap.to(label, { y: 0, duration: 0.35, ease: EASE.soft });
   }, []);
 
   useEffect(() => {
@@ -236,7 +235,7 @@ export default function ContactPage() {
     }
   }, []);
 
-  const inputClass = "w-full border-0 border-b border-linen/25 bg-transparent px-0 py-3 text-base text-linen outline-none transition-colors duration-300";
+  const inputClass = "w-full border-0 border-b border-linen/25 bg-transparent px-0 py-3 text-base text-linen outline-none focus:border-linen";
   const selectClass = inputClass + " appearance-none cursor-pointer";
 
   const introImage = imageById("second-kitchen");
@@ -246,7 +245,7 @@ export default function ContactPage() {
       <StackSection>
         {/* P1: Intro with title + lead */}
         <Panel zIndex={1} background="var(--forest)">
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 overflow-clip">
             <img
               src={introImage.src["1672"]}
               alt={introImage.alt}
@@ -255,7 +254,10 @@ export default function ContactPage() {
               decoding="async"
               className="h-full w-full object-cover opacity-30"
             />
-            <div className="absolute inset-0 bg-forest/60" />
+            <div
+              className="absolute inset-0"
+              style={{ background: "linear-gradient(to top, rgba(35, 45, 34, 0.78), rgba(35, 45, 34, 0.45))" }}
+            />
             <span className="concept-chip absolute bottom-3 left-3 z-10">Concept visualization</span>
           </div>
           <div className="relative z-10 flex h-full flex-col items-center justify-center px-8 text-center">
@@ -329,11 +331,11 @@ export default function ContactPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-6 pt-4">
                       <div className="relative">
-                        <button ref={submitRef} type="submit" disabled={status === "sending"} onMouseEnter={handleButtonEnter} onMouseLeave={handleButtonLeave} data-cursor="link" className="group relative overflow-hidden rounded-full border border-linen px-6 py-3.5 text-sm text-linen transition-colors">
+                        <button ref={submitRef} type="submit" disabled={status === "sending"} onMouseEnter={handleButtonEnter} onMouseLeave={handleButtonLeave} data-cursor="link" className="group relative overflow-hidden rounded-full border border-linen px-6 py-3.5 text-sm text-linen">
                           <span ref={fillRef} className="absolute inset-0 bg-linen" style={{ clipPath: "inset(0 100% 0 0)" }} aria-hidden="true" />
                           <span ref={buttonWrapRef} className="relative flex items-center gap-2">
-                            <span className="transition-colors duration-300 group-hover:text-forest">{contact.submit}</span>
-                            <ArrowUpRight size={16} className="transition-colors duration-300 group-hover:text-forest" />
+                            <span className="group-hover:text-forest">{contact.submit}</span>
+                            <ArrowUpRight size={16} className="group-hover:text-forest" />
                           </span>
                           {status === "sending" && (
                             <span className="absolute bottom-0 left-0 h-0.5 w-full overflow-hidden">
@@ -342,7 +344,10 @@ export default function ContactPage() {
                           )}
                         </button>
                       </div>
-                      <span className="text-xs text-linen/55">{contact.privacyLabel}{" · "}<a href="#" className="underline decoration-taupe underline-offset-4 hover:text-linen" aria-label="Privacy policy — placeholder">Privacy policy</a></span>
+                      {/* TODO: link to privacy notice page once destination is supplied */}
+                      <span role="link" aria-disabled="true" className="cursor-default text-xs text-linen/70 underline decoration-taupe/60 underline-offset-4">
+                        {contact.privacyLabel}
+                      </span>
                     </div>
                   </div>
                 </form>

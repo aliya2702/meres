@@ -17,18 +17,14 @@ function HeroContent() {
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", async () => {
-      await document.fonts.ready;
-      if (headline.current) cleanups.push(revealLines(headline.current));
-      if (cta.current) cleanups.push(magnetic(cta.current));
-    });
-    return () => { cleanups.forEach((c) => c()); mm.revert(); };
+    if (headline.current) cleanups.push(revealLines(headline.current));
+    if (cta.current) cleanups.push(magnetic(cta.current));
+    return () => { cleanups.forEach((c) => c()); };
   }, []);
 
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center overflow-clip">
         <TileCollage
           ref={collage}
           className="w-[140vw] max-w-[1400px]"
@@ -39,14 +35,21 @@ function HeroContent() {
           labelChip
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-forest/80 via-transparent to-forest/40" />
-      <p className="absolute left-5 top-24 z-20 max-w-xs text-xs uppercase tracking-[0.18em] text-linen/80 md:left-10 md:top-28">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-56"
+        style={{ background: "linear-gradient(to bottom, rgba(35, 45, 34, 0.78), transparent)" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4"
+        style={{ background: "linear-gradient(to top, rgba(35, 45, 34, 0.78), transparent)" }}
+      />
+      <p className="absolute left-5 top-28 z-20 max-w-[calc(100vw-2.5rem)] text-[1.1667rem] uppercase leading-snug tracking-[0.14em] text-hero-linen/90 md:left-10 md:top-32 md:max-w-md">
         {home.eyebrow}
       </p>
-      <div className="absolute bottom-8 right-5 z-20 max-w-[60vw] text-right md:bottom-16 md:right-10">
-        <h1 ref={headline} className="font-serif text-[7vw] leading-[0.94] text-linen md:text-[9vw]">{home.headline}</h1>
+      <div className="absolute bottom-8 right-5 z-20 max-w-[calc(100vw-2.5rem)] text-right md:bottom-16 md:right-10 md:max-w-[74vw]">
+        <h1 ref={headline} className="font-serif text-[clamp(2.25rem,8.5vw,3.5rem)] leading-[1.04] text-hero-linen md:text-[clamp(3.25rem,7.2vw,6.75rem)]">{home.headline}</h1>
         <div className="mt-6 flex justify-end">
-          <VeilLink ref={cta} to={BRAND.cta.href} data-cursor="link" className="inline-flex items-center rounded-full bg-linen px-5 py-3 text-sm text-forest">
+          <VeilLink ref={cta} to={BRAND.cta.href} data-cursor="link" className="inline-flex items-center rounded-full bg-hero-linen px-5 py-3 text-sm text-forest">
             {BRAND.cta.label}<ArrowUpRight className="ml-2" size={16} />
           </VeilLink>
         </div>

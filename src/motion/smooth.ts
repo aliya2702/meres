@@ -35,7 +35,7 @@ export function initSmoothScroll(): () => void {
 
 export function scrollToTarget(target: string | number | HTMLElement, opts: { offset?: number; duration?: number; immediate?: boolean } = {}) {
   const offset = opts.offset ?? -96;
-  if (lenis) lenis.scrollTo(target as string | number | HTMLElement, { offset, duration: opts.duration ?? 1.4, immediate: opts.immediate });
+  if (lenis) lenis.scrollTo(target as string | number | HTMLElement, { offset, duration: opts.duration ?? 1.4, immediate: opts.immediate, force: opts.immediate });
   else {
     const el = typeof target === "string" ? document.querySelector<HTMLElement>(target) : typeof target === "number" ? null : target;
     if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + offset, behavior: opts.immediate ? "auto" : "smooth" });

@@ -3,11 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --ink: #1B211A;
+  --ink: #302F2C;
+  --ink-rgb: 48 47 44;
   --forest: #2C382A;
+  --green: #2C382A;
+  --forest-rgb: 44 56 42;
+  --green-rgb: 44 56 42;
   --taupe: #AD9680;
-  --linen: #EFE9DE;
+  --taupe-rgb: 173 150 128;
+  --linen: #E8DECE;
+  --linen-rgb: 232 222 206;
   --linen-deep: #E4DBCB;
+  /* Preserved home hero colours */
+  --hero-linen: #EFE9DE;
+  --hero-linen-rgb: 239 233 222;
+  --hero-ink: #1B211A;
+  --hero-ink-rgb: 27 33 26;
   color: var(--ink);
   background: var(--linen);
   font-family: "DM Sans", system-ui, sans-serif;
@@ -27,10 +38,30 @@ button, a { -webkit-tap-highlight-color: transparent; }
 /* ── StackSection panel system ── */
 .stack-section { position: relative; }
 .stack-section > .panel {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  overflow: hidden;
+  position: relative;
+  min-height: 100svh;
+  height: auto;
+  overflow: visible;
+}
+.stack-section > .panel [data-panel-timeline] {
+  display: flex;
+  flex-direction: column;
+}
+.stack-section > .panel [data-panel-timeline] > .h-full {
+  flex: 1 0 auto;
+  min-height: 100svh;
+}
+@media (min-width: 1024px) {
+  .stack-section > .panel {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: visible;
+  }
+  .stack-section > .panel [data-panel-timeline] > .h-full {
+    min-height: 0;
+  }
 }
 .stack-section > .panel[data-debug] {
   outline: 2px dashed rgba(255, 80, 80, 0.8);
@@ -52,12 +83,25 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* Concept visualization caption chip */
 .concept-chip {
-  background: rgba(27, 33, 26, 0.82);
+  background: linear-gradient(to top, rgba(35, 45, 34, 0.78), rgba(35, 45, 34, 0.62));
   color: var(--linen);
+  font-family: "DM Sans", system-ui, sans-serif;
   font-size: 1.1667rem;
-  line-height: 1;
-  padding: 0.4rem 0.65rem;
+  line-height: 1.1;
+  padding: 0.45rem 0.75rem;
   backdrop-filter: blur(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack-section > .panel {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+  .frame-drift {
+    animation: none !important;
+  }
 }
 
 /* Headline sizing */
@@ -67,7 +111,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   max-width: 80vw;
 }
 .lead-clamp {
-  font-size: clamp(1.15rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.1667rem, 2.4vw, 2.25rem);
   max-width: 80vw;
 }
 

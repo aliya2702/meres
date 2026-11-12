@@ -32,7 +32,7 @@ export function panelStage(root: HTMLElement, panels: HTMLElement[]): () => void
           snap: {
             snapTo: 1 / (panels.length - 1),
             duration: { min: 0.4, max: 0.9 },
-            ease: "power2.inOut",
+            ease: EASE.wipe,
             delay: 0.05,
           },
           invalidateOnRefresh: true,
@@ -47,7 +47,7 @@ export function panelStage(root: HTMLElement, panels: HTMLElement[]): () => void
 
         tl.to(panel, { clipPath: "inset(0 0 0 0)", duration: 0.9, ease: EASE.wipe });
         if (outgoingImage) tl.to(outgoingImage, { scale: 1.06, duration: 0.9, ease: EASE.wipe }, "<");
-        if (outgoingLines.length) tl.to(outgoingLines, { yPercent: -60, opacity: 0, duration: 0.5, ease: "power3.in", stagger: 0.04 }, "<");
+        if (outgoingLines.length) tl.to(outgoingLines, { yPercent: -60, opacity: 0, duration: 0.5, ease: EASE.soft, stagger: 0.04 }, "<");
         if (incomingLines.length) tl.fromTo(incomingLines, { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 1.0, ease: EASE.reveal, stagger: STAGGER.lines }, "<0.15");
       });
 

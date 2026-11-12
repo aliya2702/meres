@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { prefersReducedMotion } from "@/motion/tokens";
+import { EASE, prefersReducedMotion } from "@/motion/tokens";
 import { images } from "@/content/images";
 import { splitText, type Split } from "@/motion/splitText";
 
@@ -11,7 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
  * StackSection: a parent containing <section class="panel"> children.
  * CSS sticky stacking creates the hard-edge panel wipe — no GSAP pin.
  * Each panel builds its own paused GSAP timeline played on enter, reversed on leave-back.
- * The only scrubbed effect is the previous panel scaling 1→0.96 and darkening to 35%.
+ * The only scrubbed effect is the previous panel scaling 1→0.96 and dimming via an opacity overlay.
  */
 export function StackSection({ children, className = "" }: { children: ReactNode; className?: string }) {
   const root = useRef<HTMLDivElement>(null);
@@ -31,95 +31,132 @@ export function StackSection({ children, className = "" }: { children: ReactNode
       el.setAttribute("data-debug", "");
     }
 
-    if (prefersReducedMotion()) {
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
       panels.forEach((p) => p.classList.add("panel-active"));
-      return;
-    }
-
-    const cleanups: Array<() => void> = [];
-
-    panels.forEach((panel, i) => {
-      const tlEl = panel.querySelector<HTMLElement>("[data-panel-timeline]");
-      if (!tlEl) return;
-
-      const tl = gsap.timeline({ paused: true });
-      const froms = Array.from(tlEl.querySelectorAll<HTMLElement>("[data-anim-from]"));
-
-      froms.forEach((child) => {
-        const type = child.dataset.animFrom!;
-        const clipMap: Record<string, string> = {
-          top: "inset(0 0 100% 0)", bottom: "inset(100% 0 0 0)",
-          left: "inset(0 100% 0 0)", right: "inset(0 0 0 100%)",
-        };
-        const inner = child.querySelector<HTMLElement>("[data-anim-inner]");
-        if (type === "iris") {
-          gsap.set(child, { clipPath: "circle(0% at 50% 50%)" });
-          tl.to(child, { clipPath: "circle(150% at 50% 50%)", duration: 1.2, ease: "power3.inOut" }, 0);
-          if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: "expo.out" }, 0); }
-        } else if (type === "slats") {
-          const slats = Array.from(child.querySelectorAll<HTMLElement>("[data-slat]"));
-          slats.forEach((slat, si) => {
-            const fromTop = si % 2 === 0;
-            gsap.set(slat, { clipPath: fromTop ? "inset(0 0 100% 0)" : "inset(100% 0 0 0)" });
-          });
-          tl.to(slats, { clipPath: "inset(0 0 0 0)", duration: 1.0, ease: "power4.out", stagger: 0.06 }, 0);
-          if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: "expo.out" }, 0); }
-        } else if (type === "text-rise") {
-          const lines = Array.from(child.querySelectorAll<HTMLElement>("[data-text-line]"));
-          gsap.set(lines, { yPercent: 110, opacity: 0 });
-          tl.to(lines, { yPercent: 0, opacity: 1, duration: 1.0, ease: "expo.out", stagger: 0.09 }, 0);
-        } else {
-          const clip = clipMap[type] || clipMap.bottom;
-          gsap.set(child, { clipPath: clip });
-          tl.to(child, { clipPath: "inset(0 0 0 0)", duration: 1.0, ease: "power4.out" }, 0);
-          if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: "expo.out" }, 0.05); }
-        }
-      });
-
-      const st = ScrollTrigger.create({
-        trigger: panel,
-        start: "top 55%",
-        onEnter: () => { tl.timeScale(1).play(); panel.classList.add("panel-active"); },
-        onLeaveBack: () => { tl.timeScale(2).reverse(); panel.classList.remove("panel-active"); },
-      });
-      cleanups.push(() => st.kill());
-    });
-
-    // Scrubbed scale+darken on previous panel while next covers it
-    panels.forEach((panel, i) => {
-      if (i === 0) return;
-      const prev = panels[i - 1];
-      const prevInner = prev.querySelector<HTMLElement>("[data-panel-content]");
-      if (!prevInner) return;
-      const st = ScrollTrigger.create({
-        trigger: panel,
-        start: "top bottom",
-        end: "top top",
-        scrub: 1,
-        onUpdate: (self) => {
-          const p = self.progress;
-          gsap.set(prevInner, { scale: 1 - p * 0.04, filter: `brightness(${1 - p * 0.65})` });
-        },
-        onLeaveBack: () => { gsap.set(prevInner, { scale: 1, filter: "brightness(1)" }); },
-      });
-      cleanups.push(() => st.kill());
-    });
-
-    // Debug checks
-    if (debug.current) {
-      const check = () => {
-        panels.forEach((p, i) => {
-          const imgs = p.querySelectorAll<HTMLImageElement>("img");
-          imgs.forEach((img) => { if (img.naturalWidth === 0) console.warn(`Panel ${i}: img naturalWidth 0 —`, img.src); });
-          const h = p.querySelector("h1, h2, h3, [data-headline]");
-          if (!h) console.warn(`Panel ${i}: no visible headline`);
-        });
+      return () => {
+        panels.forEach((p) => p.classList.remove("panel-active"));
       };
-      const id = window.setTimeout(check, 1500);
-      cleanups.push(() => window.clearTimeout(id));
-    }
+    });
 
-    return () => { cleanups.forEach((c) => c()); };
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      let cancelled = false;
+      const cleanups: Array<() => void> = [];
+
+      const setup = () => {
+        if (cancelled) return;
+        panels.forEach((panel) => {
+          const tlEl = panel.querySelector<HTMLElement>("[data-panel-timeline]");
+          if (!tlEl) return;
+
+          const tl = gsap.timeline({ paused: true });
+          const froms = Array.from(tlEl.querySelectorAll<HTMLElement>("[data-anim-from]"));
+
+          froms.forEach((child) => {
+            const type = child.dataset.animFrom!;
+            const clipMap: Record<string, string> = {
+              top: "inset(0 0 100% 0)", bottom: "inset(100% 0 0 0)",
+              left: "inset(0 100% 0 0)", right: "inset(0 0 0 100%)",
+            };
+            const inner = child.querySelector<HTMLElement>("[data-anim-inner]");
+            if (type === "iris") {
+              gsap.set(child, { clipPath: "circle(0% at 50% 50%)" });
+              tl.to(child, { clipPath: "circle(150% at 50% 50%)", duration: 1.2, ease: EASE.iris }, 0);
+              if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: EASE.wipe }, 0); }
+            } else if (type === "slats") {
+              const slats = Array.from(child.querySelectorAll<HTMLElement>("[data-slat]"));
+              slats.forEach((slat, si) => {
+                const fromTop = si % 2 === 0;
+                gsap.set(slat, { clipPath: fromTop ? "inset(0 0 100% 0)" : "inset(100% 0 0 0)" });
+              });
+              tl.to(slats, { clipPath: "inset(0 0 0 0)", duration: 1.0, ease: EASE.wipe, stagger: 0.06 }, 0);
+              if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: EASE.wipe }, 0); }
+            } else if (type === "text-rise") {
+              const lines = Array.from(child.querySelectorAll<HTMLElement>("[data-text-line]"));
+              gsap.set(lines, { yPercent: 110, opacity: 0 });
+              tl.to(lines, { yPercent: 0, opacity: 1, duration: 1.0, ease: EASE.reveal, stagger: 0.09 }, 0);
+            } else {
+              const clip = clipMap[type] || clipMap.bottom;
+              gsap.set(child, { clipPath: clip });
+              tl.to(child, { clipPath: "inset(0 0 0 0)", duration: 1.0, ease: EASE.wipe }, 0);
+              if (inner) { gsap.set(inner, { scale: 1.12 }); tl.to(inner, { scale: 1, duration: 1.4, ease: EASE.wipe }, 0.05); }
+            }
+          });
+
+          const st = ScrollTrigger.create({
+            trigger: panel,
+            start: "top 55%",
+            onEnter: () => { tl.timeScale(1).play(); panel.classList.add("panel-active"); },
+            onLeaveBack: () => { tl.timeScale(2).reverse(); panel.classList.remove("panel-active"); },
+          });
+          cleanups.push(() => { st.kill(); tl.kill(); });
+        });
+
+        // Scrubbed scale + dark opacity overlay on previous panel while next covers it (desktop only)
+        const desktopMm = gsap.matchMedia();
+        desktopMm.add("(min-width: 1024px) and (pointer: fine)", () => {
+          const scrubTriggers: ScrollTrigger[] = [];
+          panels.forEach((panel, i) => {
+            if (i === 0) return;
+            const prev = panels[i - 1];
+            const prevInner = prev.querySelector<HTMLElement>("[data-panel-content]");
+            const prevDim = prev.querySelector<HTMLElement>("[data-panel-dim]");
+            if (!prevInner) return;
+            const st = ScrollTrigger.create({
+              trigger: panel,
+              start: "top bottom",
+              end: "top top",
+              scrub: 1,
+              onUpdate: (self) => {
+                const p = self.progress;
+                gsap.set(prevInner, { scale: 1 - p * 0.04 });
+                if (prevDim) gsap.set(prevDim, { opacity: p * 0.65 });
+              },
+              onLeaveBack: () => {
+                gsap.set(prevInner, { scale: 1 });
+                if (prevDim) gsap.set(prevDim, { opacity: 0 });
+              },
+            });
+            scrubTriggers.push(st);
+          });
+          return () => {
+            scrubTriggers.forEach((st) => st.kill());
+            panels.forEach((p) => {
+              const inner = p.querySelector<HTMLElement>("[data-panel-content]");
+              const dim = p.querySelector<HTMLElement>("[data-panel-dim]");
+              if (inner) gsap.set(inner, { clearProps: "transform" });
+              if (dim) gsap.set(dim, { opacity: 0 });
+            });
+          };
+        });
+        cleanups.push(() => desktopMm.revert());
+
+        ScrollTrigger.refresh();
+      };
+
+      void document.fonts.ready.then(setup);
+
+      if (debug.current) {
+        const check = () => {
+          panels.forEach((p, i) => {
+            const imgs = p.querySelectorAll<HTMLImageElement>("img");
+            imgs.forEach((img) => { if (img.naturalWidth === 0) console.warn(`Panel ${i}: img naturalWidth 0 —`, img.src); });
+            const h = p.querySelector("h1, h2, h3, [data-headline]");
+            if (!h) console.warn(`Panel ${i}: no visible headline`);
+          });
+        };
+        const id = window.setTimeout(check, 1500);
+        cleanups.push(() => window.clearTimeout(id));
+      }
+
+      return () => {
+        cancelled = true;
+        cleanups.forEach((c) => c());
+      };
+    });
+
+    return () => { mm.revert(); };
   }, []);
 
   return <div ref={root} className={`stack-section ${className}`}>{children}</div>;
@@ -179,7 +216,7 @@ export function Frame({ slot, eager }: { slot: FrameSlot; eager?: boolean }) {
       ref={containerRef}
       data-frame-slot
       data-anim-from={from}
-      style={{ gridArea: slot.gridArea, overflow: "hidden", background: "#AD9680" }}
+      style={{ gridArea: slot.gridArea, overflow: "clip", background: "#AD9680" }}
     >
       {isSlat && (
         <div data-anim-inner style={{ position: "absolute", inset: 0 }}>
@@ -236,20 +273,29 @@ export function Frame({ slot, eager }: { slot: FrameSlot; eager?: boolean }) {
 }
 
 /**
- * TextRise: line-by-line text rise entrance (1.0s expo.out).
+ * TextRise: line-by-line text rise entrance (1.0s power3.out).
  * Uses splitText for accessible splitting.
  */
 export function TextRise({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!ref.current || prefersReducedMotion()) return;
-    let split: Split | null = null;
-    (async () => {
-      await document.fonts.ready;
-      split = splitText(ref.current!, { lines: true });
-      split.lines.forEach((l) => l.setAttribute("data-text-line", ""));
-    })();
-    return () => { split?.revert(); };
+    const el = ref.current;
+    if (!el) return;
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      let cancelled = false;
+      let split: Split | null = null;
+      void document.fonts.ready.then(() => {
+        if (cancelled) return;
+        split = splitText(el, { lines: true });
+        split.lines.forEach((l) => l.setAttribute("data-text-line", ""));
+      });
+      return () => {
+        cancelled = true;
+        split?.revert();
+      };
+    });
+    return () => { mm.revert(); };
   }, []);
   return (
     <div ref={ref} data-anim-from="text-rise" className={className} style={{ overflow: "hidden" }}>
@@ -260,21 +306,23 @@ export function TextRise({ children, className = "" }: { children: ReactNode; cl
 
 /**
  * Panel: a sticky panel child of StackSection. Must contain a [data-panel-content]
- * wrapper (for the scrubbed scale/darken) and a [data-panel-timeline] element
+ * wrapper (for the scrubbed scale/dimming) and a [data-panel-timeline] element
  * (where StackSection looks for [data-anim-from] children to animate).
  */
 export function Panel({
-  children, className = "", zIndex = 0, background,
-}: { children: ReactNode; className?: string; zIndex?: number; background?: string }) {
+  children, className = "", zIndex = 0, background, theme,
+}: { children: ReactNode; className?: string; zIndex?: number; background?: string; theme?: "dark" | "light" }) {
   return (
     <section
       className={`panel ${className}`}
+      data-theme={theme}
       style={{ zIndex, background: background || "var(--linen)" }}
     >
-      <div data-panel-content className="absolute inset-0">
-        <div data-panel-timeline className="absolute inset-0">
+      <div data-panel-content className="relative min-h-[100svh] w-full lg:absolute lg:inset-0 lg:min-h-0">
+        <div data-panel-timeline className="relative min-h-[100svh] w-full lg:absolute lg:inset-0 lg:min-h-0">
           {children}
         </div>
+        <div data-panel-dim aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 bg-[#1B211A] opacity-0" />
       </div>
     </section>
   );

@@ -4,11 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#1B211A',
-        forest: '#2C382A',
-        taupe: '#AD9680',
-        linen: '#EFE9DE',
+        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        forest: 'rgb(var(--forest-rgb) / <alpha-value>)',
+        green: 'rgb(var(--green-rgb) / <alpha-value>)',
+        taupe: 'rgb(var(--taupe-rgb) / <alpha-value>)',
+        linen: 'rgb(var(--linen-rgb) / <alpha-value>)',
         'linen-deep': '#E4DBCB',
+        'hero-linen': 'rgb(var(--hero-linen-rgb) / <alpha-value>)',
+        'hero-ink': 'rgb(var(--hero-ink-rgb) / <alpha-value>)',
       },
       fontFamily: {
         serif: ['Libre Caslon Display', 'Georgia', 'serif'],

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import gsap from "gsap";
 import { revealLines } from "@/motion/helpers";
-import { EASE } from "@/motion/tokens";
+import { EASE, prefersReducedMotion } from "@/motion/tokens";
 
 type Props = {
   label?: string;
@@ -19,6 +19,11 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
 
   const close = useCallback(() => {
     if (!panelRef.current) return;
+    if (prefersReducedMotion()) {
+      gsap.to(panelRef.current, { opacity: 0, duration: 0.25, ease: EASE.soft, onComplete: () => setOpen(false) });
+      if (pageRef.current) gsap.to(pageRef.current, { opacity: 1, duration: 0.25, ease: EASE.soft });
+      return;
+    }
     gsap.to(panelRef.current, { clipPath: "inset(0 0 0 100%)", duration: 0.7, ease: EASE.wipe, onComplete: () => setOpen(false) });
     if (pageRef.current) gsap.to(pageRef.current, { opacity: 1, duration: 0.5, ease: EASE.soft });
   }, []);
@@ -30,8 +35,17 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
   useEffect(() => {
     if (!open) return;
     pageRef.current = document.getElementById("main");
+    let textCleanup: (() => void) | undefined;
 
-    requestAnimationFrame(() => {
+    const rafId = requestAnimationFrame(() => {
+      if (prefersReducedMotion()) {
+        if (panelRef.current) {
+          gsap.fromTo(panelRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: EASE.soft });
+        }
+        if (pageRef.current) gsap.to(pageRef.current, { opacity: 0.4, duration: 0.25, ease: EASE.soft });
+        return;
+      }
+
       if (panelRef.current) {
         gsap.set(panelRef.current, { clipPath: "inset(0 0 0 100%)" });
         gsap.to(panelRef.current, { clipPath: "inset(0 0 0 0)", duration: 0.9, ease: EASE.wipe });
@@ -41,8 +55,7 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
       if (contentRef.current) {
         const firstP = contentRef.current.querySelector("p, h2, h3");
         if (firstP) {
-          const cleanup = revealLines(firstP as HTMLElement);
-          return () => cleanup();
+          textCleanup = revealLines(firstP as HTMLElement);
         }
       }
     });
@@ -65,6 +78,8 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
     closeBtn?.focus();
 
     return () => {
+      cancelAnimationFrame(rafId);
+      textCleanup?.();
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
       if (pageRef.current) gsap.set(pageRef.current, { opacity: 1, clearProps: "opacity" });
@@ -77,7 +92,7 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
         ref={triggerRef}
         type="button"
         onClick={openDrawer}
-        className="read-more-pill inline-flex items-center gap-1.5 rounded-full border border-current/30 px-4 py-2 text-xs uppercase tracking-[0.12em] transition-colors hover:bg-current/10"
+        className="read-more-pill inline-flex items-center gap-1.5 rounded-full border border-current/30 px-5 py-2.5 text-[1.1667rem] uppercase tracking-[0.1em] hover:bg-current/10"
         aria-expanded={open}
       >
         {label}
@@ -99,7 +114,7 @@ export function ReadMoreDrawer({ label = "Read more", heading, children }: Props
                 type="button"
                 data-drawer-close
                 onClick={close}
-                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] text-linen/70 transition-colors hover:text-linen"
+                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] text-linen/70 hover:text-linen"
                 aria-label="Close"
               >
                 Close <X size={14} />
