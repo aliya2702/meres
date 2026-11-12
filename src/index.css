@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #1B211A;
+  --forest: #2C382A;
+  --taupe: #AD9680;
+  --linen: #EFE9DE;
+  --linen-deep: #E4DBCB;
+  color: var(--ink);
+  background: var(--linen);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--linen); }
+body { margin: 0; min-width: 320px; overflow-x: hidden; background: var(--linen); }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; }
+::selection { background: var(--taupe); color: var(--linen); }
+
+/* ── StackSection panel system ── */
+.stack-section { position: relative; }
+.stack-section > .panel {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+.stack-section > .panel[data-debug] {
+  outline: 2px dashed rgba(255, 80, 80, 0.8);
+  outline-offset: -2px;
+}
+
+/* Idle drift keyframes (paused unless .panel-active) */
+@keyframes drift-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(var(--drift-amp, 1.5vw)); } }
+@keyframes drift-x { 0%,100% { transform: translateX(0); } 50% { transform: translateX(var(--drift-amp, 1.5vw)); } }
+@keyframes drift-y-neg { 0%,100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--drift-amp, 1.5vw) * -1)); } }
+@keyframes drift-x-neg { 0%,100% { transform: translateX(0); } 50% { transform: translateX(calc(var(--drift-amp, 1.5vw) * -1)); } }
+
+.frame-drift { animation-play-state: paused; will-change: transform; }
+.panel-active .frame-drift { animation-play-state: running; animation-duration: var(--drift-dur, 12s); animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+.frame-drift[data-drift="up"]    { animation-name: drift-y-neg; }
+.frame-drift[data-drift="down"]  { animation-name: drift-y; }
+.frame-drift[data-drift="left"]  { animation-name: drift-x-neg; }
+.frame-drift[data-drift="right"] { animation-name: drift-x; }
+
+/* Concept visualization caption chip */
+.concept-chip {
+  background: rgba(27, 33, 26, 0.82);
+  color: var(--linen);
+  font-size: 1.1667rem;
+  line-height: 1;
+  padding: 0.4rem 0.65rem;
+  backdrop-filter: blur(4px);
+}
+
+/* Headline sizing */
+.headline-clamp {
+  font-size: clamp(2rem, 7vw, 7rem);
+  line-height: 1.08;
+  max-width: 80vw;
+}
+.lead-clamp {
+  font-size: clamp(1.15rem, 2.4vw, 2.25rem);
+  max-width: 80vw;
+}
+
+/* 12×8 grid utility */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+/* debug outline for frames */
+[data-debug] [data-frame-slot] {
+  outline: 1px dashed rgba(80, 255, 80, 0.5);
+  outline-offset: -1px;
+}
