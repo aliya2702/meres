@@ -69,9 +69,12 @@ export function Header() {
       });
     });
 
+    window.addEventListener("meres:theme-sync", syncTheme);
+
     return () => {
       cancelled = true;
       cancelAnimationFrame(rafId);
+      window.removeEventListener("meres:theme-sync", syncTheme);
       triggers.forEach((t) => t.kill());
     };
   }, [pathname]);

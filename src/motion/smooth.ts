@@ -34,6 +34,14 @@ export function initSmoothScroll(): () => void {
 }
 
 function resolveScrollY(el: HTMLElement, offset: number): number {
+  const stId = el.dataset.pinSt;
+  if (stId) {
+    const st = ScrollTrigger.getById(stId);
+    const ratio = Number(el.dataset.pinRatio);
+    if (st && Number.isFinite(ratio)) {
+      return st.start + (st.end - st.start) * ratio;
+    }
+  }
   const panel = el.classList.contains("panel") ? el : el.closest<HTMLElement>(".stack-section > .panel");
   const stack = panel?.closest<HTMLElement>(".stack-section");
   if (panel && stack) {
