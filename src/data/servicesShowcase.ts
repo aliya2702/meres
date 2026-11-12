@@ -20,11 +20,23 @@ export type ServiceShowcaseItem = {
 
 const splitSentences = (text: string): string[] => text.split(/(?<=[.!?])\s+/);
 
-// Automatically detects /public/images/services/bathroom.png and additions.png when present on disk.
-const HAS_BATHROOM_IMAGE =
-  typeof __MERES_HAS_BATHROOM_IMAGE__ !== "undefined" ? __MERES_HAS_BATHROOM_IMAGE__ : false;
-const HAS_ADDITIONS_IMAGE =
-  typeof __MERES_HAS_ADDITIONS_IMAGE__ !== "undefined" ? __MERES_HAS_ADDITIONS_IMAGE__ : false;
+const found = import.meta.glob("/src/assets/services/*.{jpg,jpeg,png,webp}", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+function findImage(basename: string): string | null {
+  const prefix = basename.toLowerCase();
+  const match = Object.entries(found).find(([filePath]) => {
+    const fileName = filePath.split("/").pop()?.toLowerCase() ?? "";
+    return fileName.startsWith(prefix);
+  });
+  return match ? match[1] : null;
+}
+
+const bathroomImageSrc = findImage("bathroom") ?? null;
+const additionsImageSrc = findImage("additions") ?? null;
 
 const img02 = images.find((item) => item.id === "kitchen-wide")!;
 const img06 = images.find((item) => item.id === "second-kitchen")!;
@@ -53,10 +65,10 @@ export const servicesShowcase: readonly ServiceShowcaseItem[] = [
     caption: splitSentences(bathroomHome.body)[0],
     paragraph: bathroomSection.paragraphs[1],
     lines: splitSentences(bathroomSection.paragraphs[0]),
-    image: HAS_BATHROOM_IMAGE
+    image: bathroomImageSrc
       ? {
-          src: "/images/services/bathroom.png",
-          alt: "Concept visualization of a tailored residential bathroom.",
+          src: bathroomImageSrc,
+          alt: "Concept visualization of a tailored residential bathroom with warm cabinetry, stone surfaces, and calm daylight.",
         }
       : null,
     theme: "green",
@@ -86,13 +98,12 @@ export const servicesShowcase: readonly ServiceShowcaseItem[] = [
       additionsSection.paragraphs[0],
       additionsSection.paragraphs[1],
     ],
-    image: HAS_ADDITIONS_IMAGE
+    image: additionsImageSrc
       ? {
-          src: "/images/services/additions.png",
-          alt: "Concept visualization of a custom home exterior and architectural addition.",
+          src: additionsImageSrc,
+          alt: "Concept visualization of a custom home addition and exterior framing daylight and outdoor views.",
         }
       : null,
     theme: "green",
   },
 ];
-
