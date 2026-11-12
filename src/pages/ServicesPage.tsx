@@ -19,7 +19,7 @@ const img02 = images.find((item) => item.id === "kitchen-wide")!;
 function triggerAnchorGlide(id: string) {
   window.history.replaceState(null, "", `/services#${id}`);
   scrollToTarget(`#${id}`, {
-    duration: 1.3,
+    duration: 1.4,
     offset: -96,
     onComplete: () => {
       window.dispatchEvent(new CustomEvent("meres:anchor-replay", { detail: { id } }));

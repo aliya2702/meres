@@ -20,9 +20,11 @@ export type ServiceShowcaseItem = {
 
 const splitSentences = (text: string): string[] => text.split(/(?<=[.!?])\s+/);
 
-// Checked against public/images/: bathroom and additions assets do not exist on disk.
-const HAS_BATHROOM_IMAGE = false;
-const HAS_ADDITIONS_IMAGE = false;
+// Automatically detects /public/images/services/bathroom.png and additions.png when present on disk.
+const HAS_BATHROOM_IMAGE =
+  typeof __MERES_HAS_BATHROOM_IMAGE__ !== "undefined" ? __MERES_HAS_BATHROOM_IMAGE__ : false;
+const HAS_ADDITIONS_IMAGE =
+  typeof __MERES_HAS_ADDITIONS_IMAGE__ !== "undefined" ? __MERES_HAS_ADDITIONS_IMAGE__ : false;
 
 const img02 = images.find((item) => item.id === "kitchen-wide")!;
 const img06 = images.find((item) => item.id === "second-kitchen")!;

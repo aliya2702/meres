@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowUpRight } from "lucide-react";
@@ -6,7 +7,7 @@ import { MeresMark } from "@/components/MeresMark";
 import { VeilLink } from "@/components/VeilLink";
 import { BRAND } from "@/content/copy";
 import { servicesShowcase, type ServiceShowcaseItem } from "@/data/servicesShowcase";
-import { scrollToTarget } from "@/motion/smooth";
+import { lenis, scrollToTarget } from "@/motion/smooth";
 import { splitText, type Split } from "@/motion/splitText";
 import { EASE } from "@/motion/tokens";
 import { useViewMode } from "@/motion/useViewMode";
@@ -15,9 +16,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 const MQ_PINNED =
   "(min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+const MQ_MOTION = "(prefers-reduced-motion: no-preference)";
 const UNIT_PER_SERVICE = 8;
-const HOLD_A_OFFSET = 2.7;
 const STAGE_B_OFFSET = 3.5;
+const STAGE_B_ANCHOR_OFFSET = 5.5;
 const END_HOLD = 1.5;
 const TOTAL_UNITS = servicesShowcase.length * UNIT_PER_SERVICE + END_HOLD;
 
@@ -56,12 +58,20 @@ function createEmptyRefs(): ServiceRefs {
 }
 
 function getThemeForTime(time: number): "light" | "dark" {
-  const index = Math.min(servicesShowcase.length - 1, Math.max(0, Math.floor(time / UNIT_PER_SERVICE)));
+  const index = Math.min(
+    servicesShowcase.length - 1,
+    Math.max(0, Math.floor(time / UNIT_PER_SERVICE)),
+  );
   const localTime = time - index * UNIT_PER_SERVICE;
   if (localTime < STAGE_B_OFFSET) {
     return "dark";
   }
   return servicesShowcase[index].theme === "linen" ? "light" : "dark";
+}
+
+function getStageBPosition(st: ScrollTrigger, idx: number): number {
+  const labelTime = idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET;
+  return st.start + (labelTime / TOTAL_UNITS) * (st.end - st.start);
 }
 
 function ServiceLayer({
@@ -82,7 +92,7 @@ function ServiceLayer({
       className={
         isPinned
           ? "absolute inset-0 z-0 flex h-full w-full flex-col justify-end overflow-clip bg-forest text-linen"
-          : "relative flex min-h-[78svh] w-full flex-col justify-end bg-forest text-linen"
+          : "relative flex min-h-[78svh] w-full flex-col justify-end overflow-clip bg-forest text-linen"
       }
     >
       {/* Full-bleed media or green-to-taupe tonal fallback */}
@@ -143,14 +153,11 @@ function ServiceLayer({
         }
       >
         <h2
+          id={`${item.id}-title`}
           ref={(el) => {
             refs.title = el;
           }}
-          className={
-            isPinned
-              ? "max-w-[90vw] font-serif text-[clamp(4rem,12vw,13rem)] leading-[0.95] text-linen break-words"
-              : "font-serif text-[clamp(4rem,12vw,13rem)] leading-[0.95] text-linen break-words"
-          }
+          className="max-w-[90vw] font-serif text-[clamp(3.25rem,15vw,5rem)] leading-[0.95] text-linen lg:text-[clamp(4rem,12vw,13rem)]"
         >
           {item.title}
         </h2>
@@ -183,11 +190,13 @@ function ServicePanel({
   variant,
   isPinned,
   refs,
+  onPanelFocus,
 }: {
   item: ServiceShowcaseItem;
   variant: "home" | "page";
   isPinned: boolean;
   refs: ServiceRefs;
+  onPanelFocus: () => void;
 }) {
   const isGreen = item.theme === "green";
   const hairlineCount = item.lines.length + 1;
@@ -198,6 +207,7 @@ function ServicePanel({
         refs.panel = el;
       }}
       data-theme={isPinned ? undefined : isGreen ? "dark" : "light"}
+      onFocusCapture={isPinned ? onPanelFocus : undefined}
       style={
         isPinned
           ? {
@@ -328,11 +338,28 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
   const mode = useViewMode();
   const isPinned = mode === "desktop";
   const stId = `services-showcase-${variant}`;
+  const { hash } = useLocation();
 
   const rootRef = useRef<HTMLDivElement>(null);
   const serviceRefs = useRef<ServiceRefs[]>(servicesShowcase.map(() => createEmptyRefs()));
   const [activeIndex, setActiveIndex] = useState(0);
+  const lastScrolledHashRef = useRef<string>("");
 
+  const scrollToService = useCallback(
+    (idx: number) => {
+      const st = ScrollTrigger.getById(stId);
+      if (!st) return;
+      const pos = getStageBPosition(st, idx);
+      if (lenis) {
+        lenis.scrollTo(pos, { duration: 1.4, immediate: false });
+      } else {
+        scrollToTarget(pos, { offset: 0, duration: 1.4, immediate: false });
+      }
+    },
+    [stId],
+  );
+
+  // Desktop pinned choreography
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !isPinned) return;
@@ -491,7 +518,13 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
             );
             tl!.to(
               titleSplit.lines,
-              { yPercent: 0, opacity: 1, duration: titleDur, stagger: titleStagger, ease: EASE.reveal },
+              {
+                yPercent: 0,
+                opacity: 1,
+                duration: titleDur,
+                stagger: titleStagger,
+                ease: EASE.reveal,
+              },
               t + 1.4,
             );
           }
@@ -589,10 +622,53 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
         ScrollTrigger.refresh();
       };
 
+      const waitForImages = async () => {
+        const imgs = serviceRefs.current
+          .map((r) => r.img)
+          .filter((el): el is HTMLImageElement => Boolean(el));
+        await Promise.all(
+          imgs.map(
+            (img) =>
+              new Promise<void>((resolve) => {
+                if (img.complete) {
+                  resolve();
+                  return;
+                }
+                const done = () => {
+                  img.removeEventListener("load", done);
+                  img.removeEventListener("error", done);
+                  resolve();
+                };
+                img.addEventListener("load", done);
+                img.addEventListener("error", done);
+              }),
+          ),
+        );
+      };
+
       setInitialStates();
 
-      void document.fonts.ready.then(() => {
-        if (!cancelled) buildTimeline();
+      void document.fonts.ready.then(async () => {
+        if (cancelled) return;
+        buildTimeline();
+        await waitForImages();
+        if (cancelled) return;
+        ScrollTrigger.refresh();
+
+        const currentHash = window.location.hash;
+        if (currentHash && currentHash !== lastScrolledHashRef.current) {
+          const hashIdx = servicesShowcase.findIndex((s) => `#${s.id}` === currentHash);
+          if (hashIdx !== -1) {
+            lastScrolledHashRef.current = currentHash;
+            const st = ScrollTrigger.getById(stId);
+            if (st) {
+              const targetPos = getStageBPosition(st, hashIdx);
+              if (Math.abs(window.scrollY - targetPos) > 8) {
+                scrollToService(hashIdx);
+              }
+            }
+          }
+        }
       });
 
       const onResize = () => {
@@ -619,15 +695,250 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
     return () => {
       mm.revert();
     };
-  }, [isPinned, stId]);
+  }, [isPinned, scrollToService, stId]);
 
-  const scrollToService = (idx: number) => {
+  // Mobile & tablet (<1024px or coarse pointer) light reveals; reduced motion gets zero motion
+  useEffect(() => {
+    if (mode !== "mobile") return;
+
+    const mm = gsap.matchMedia();
+    mm.add(MQ_MOTION, () => {
+      let cancelled = false;
+      const triggers: ScrollTrigger[] = [];
+      const timelines: gsap.core.Timeline[] = [];
+      const splits: Split[] = [];
+
+      const setInitialMobileStates = () => {
+        serviceRefs.current.forEach((refs) => {
+          if (refs.layer) gsap.set(refs.layer, { clipPath: "inset(100% 0% 0% 0%)" });
+          if (refs.img) gsap.set(refs.img, { scale: 1.15 });
+          if (refs.caption) gsap.set(refs.caption, { y: 12, opacity: 0 });
+          refs.hairlines.forEach((lineEl) => {
+            if (lineEl) gsap.set(lineEl, { scaleX: 0, transformOrigin: "left center" });
+          });
+          if (refs.cta) gsap.set(refs.cta, { y: 16, opacity: 0 });
+        });
+      };
+
+      const resetMobileProps = () => {
+        serviceRefs.current.forEach((refs) => {
+          const targets = [
+            refs.layer,
+            refs.img,
+            refs.title,
+            refs.caption,
+            refs.paragraph,
+            refs.closing,
+            refs.cta,
+            ...refs.hairlines,
+            ...refs.lineTexts,
+          ].filter((el): el is NonNullable<typeof el> => Boolean(el));
+          if (targets.length) {
+            gsap.set(targets, { clearProps: "all" });
+          }
+        });
+      };
+
+      setInitialMobileStates();
+
+      void document.fonts.ready.then(() => {
+        if (cancelled) return;
+
+        serviceRefs.current.forEach((refs, i) => {
+          const item = servicesShowcase[i];
+
+          // Layer clip-reveal from bottom + inner image scale + title lines + caption
+          if (refs.layer) {
+            const titleSplit = refs.title ? splitText(refs.title, { lines: true }) : null;
+            if (titleSplit) {
+              splits.push(titleSplit);
+              gsap.set(titleSplit.lines, { yPercent: 105, opacity: 0 });
+            }
+
+            triggers.push(
+              ScrollTrigger.create({
+                trigger: refs.layer,
+                start: "top 85%",
+                once: true,
+                onEnter: () => {
+                  const ltl = gsap.timeline();
+                  timelines.push(ltl);
+                  ltl.to(
+                    refs.layer,
+                    { clipPath: "inset(0% 0% 0% 0%)", duration: 1.2, ease: EASE.wipe },
+                    0,
+                  );
+                  if (refs.img) {
+                    ltl.to(refs.img, { scale: 1, duration: 1.2, ease: EASE.wipe }, 0);
+                  }
+                  if (titleSplit) {
+                    ltl.to(
+                      titleSplit.lines,
+                      {
+                        yPercent: 0,
+                        opacity: 1,
+                        duration: 0.9,
+                        stagger: 0.1,
+                        ease: EASE.reveal,
+                      },
+                      0.3,
+                    );
+                  }
+                  if (refs.caption) {
+                    ltl.to(
+                      refs.caption,
+                      { y: 0, opacity: 1, duration: 0.75, ease: EASE.reveal },
+                      0.55,
+                    );
+                  }
+                },
+              }),
+            );
+          }
+
+          // Panel text rises 0.25s after trigger + hairlines draw
+          if (refs.panel) {
+            const paraSplit = refs.paragraph ? splitText(refs.paragraph, { lines: true }) : null;
+            if (paraSplit) {
+              splits.push(paraSplit);
+              gsap.set(paraSplit.lines, { yPercent: 105, opacity: 0 });
+            }
+
+            const lineSplits: Split[] = [];
+            refs.lineTexts.slice(0, item.lines.length).forEach((el) => {
+              if (!el) return;
+              const ls = splitText(el, { lines: true });
+              splits.push(ls);
+              lineSplits.push(ls);
+              gsap.set(ls.lines, { yPercent: 105, opacity: 0 });
+            });
+
+            const closingSplit =
+              item.closing && refs.closing ? splitText(refs.closing, { lines: true }) : null;
+            if (closingSplit) {
+              splits.push(closingSplit);
+              gsap.set(closingSplit.lines, { yPercent: 105, opacity: 0 });
+            }
+
+            triggers.push(
+              ScrollTrigger.create({
+                trigger: refs.panel,
+                start: "top 85%",
+                once: true,
+                onEnter: () => {
+                  const ptl = gsap.timeline({ delay: 0.25 });
+                  timelines.push(ptl);
+
+                  if (paraSplit) {
+                    ptl.to(
+                      paraSplit.lines,
+                      {
+                        yPercent: 0,
+                        opacity: 1,
+                        duration: 0.85,
+                        stagger: 0.08,
+                        ease: EASE.reveal,
+                      },
+                      0,
+                    );
+                  }
+
+                  refs.hairlines.forEach((hairlineEl, j) => {
+                    if (hairlineEl) {
+                      ptl.to(
+                        hairlineEl,
+                        { scaleX: 1, duration: 0.6, ease: EASE.reveal },
+                        0.15 + j * 0.1,
+                      );
+                    }
+                  });
+
+                  lineSplits.forEach((ls, j) => {
+                    ptl.to(
+                      ls.lines,
+                      {
+                        yPercent: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        stagger: 0.04,
+                        ease: EASE.reveal,
+                      },
+                      0.2 + j * 0.1,
+                    );
+                  });
+
+                  const tailTime = 0.25 + item.lines.length * 0.1;
+                  if (closingSplit) {
+                    ptl.to(
+                      closingSplit.lines,
+                      {
+                        yPercent: 0,
+                        opacity: 1,
+                        duration: 0.7,
+                        stagger: 0.04,
+                        ease: EASE.reveal,
+                      },
+                      tailTime,
+                    );
+                  }
+                  if (refs.cta) {
+                    ptl.to(
+                      refs.cta,
+                      { y: 0, opacity: 1, duration: 0.7, ease: EASE.reveal },
+                      closingSplit ? tailTime + 0.12 : tailTime,
+                    );
+                  }
+                },
+              }),
+            );
+          }
+        });
+
+        ScrollTrigger.refresh();
+      });
+
+      return () => {
+        cancelled = true;
+        triggers.forEach((t) => t.kill());
+        timelines.forEach((t) => t.kill());
+        splits.forEach((s) => s.revert());
+        resetMobileProps();
+      };
+    });
+
+    return () => {
+      mm.revert();
+    };
+  }, [mode]);
+
+  // Handle in-page hash changes while already mounted in pinned mode
+  useEffect(() => {
+    if (!isPinned || !hash) return;
+    if (hash === lastScrolledHashRef.current) return;
+    const hashIdx = servicesShowcase.findIndex((s) => `#${s.id}` === hash);
+    if (hashIdx === -1) return;
     const st = ScrollTrigger.getById(stId);
     if (!st) return;
-    const ratio = (idx * UNIT_PER_SERVICE + HOLD_A_OFFSET) / TOTAL_UNITS;
-    const targetY = st.start + (st.end - st.start) * ratio;
-    scrollToTarget(targetY, { offset: 0, duration: 1.1 });
-  };
+    lastScrolledHashRef.current = hash;
+    scrollToService(hashIdx);
+  }, [hash, isPinned, scrollToService, stId]);
+
+  const handlePanelFocus = useCallback(
+    (idx: number) => {
+      const st = ScrollTrigger.getById(stId);
+      if (!st) return;
+      const currentTime = st.progress * TOTAL_UNITS;
+      const minVisibleTime = idx * UNIT_PER_SERVICE + STAGE_B_OFFSET + 0.5;
+      const maxVisibleTime =
+        idx === servicesShowcase.length - 1
+          ? TOTAL_UNITS + 0.5
+          : (idx + 1) * UNIT_PER_SERVICE + 0.2;
+      if (currentTime < minVisibleTime || currentTime > maxVisibleTime) {
+        scrollToService(idx);
+      }
+    },
+    [scrollToService, stId],
+  );
 
   return (
     <div
@@ -637,12 +948,13 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
     >
       {servicesShowcase.map((item, idx) => {
         const refs = serviceRefs.current[idx];
-        const ratio = (idx * UNIT_PER_SERVICE + HOLD_A_OFFSET) / TOTAL_UNITS;
+        const ratio = (idx * UNIT_PER_SERVICE + STAGE_B_ANCHOR_OFFSET) / TOTAL_UNITS;
 
         return (
           <section
             key={item.id}
             id={item.id}
+            aria-labelledby={`${item.id}-title`}
             ref={(el) => {
               refs.section = el;
             }}
@@ -653,7 +965,13 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
             className={isPinned ? "absolute inset-0" : "relative scroll-mt-[96px]"}
           >
             <ServiceLayer item={item} isPinned={isPinned} refs={refs} />
-            <ServicePanel item={item} variant={variant} isPinned={isPinned} refs={refs} />
+            <ServicePanel
+              item={item}
+              variant={variant}
+              isPinned={isPinned}
+              refs={refs}
+              onPanelFocus={() => handlePanelFocus(idx)}
+            />
           </section>
         );
       })}
@@ -672,7 +990,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
                 aria-label={`Go to ${item.title}`}
                 aria-current={isActive ? "step" : undefined}
                 onClick={() => scrollToService(idx)}
-                className="group flex h-6 w-12 items-center text-left focus-visible:outline-linen"
+                className="group flex h-6 w-12 items-center rounded-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-linen"
               >
                 <span
                   aria-hidden="true"
