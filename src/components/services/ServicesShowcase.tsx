@@ -134,30 +134,31 @@ function ServiceLayer({
         )}
       </div>
 
-      {/* Bottom dark scrim over lower 55% ensuring >= 4.5:1 text contrast */}
+      {/* Bottom dark scrim over lower 60% ensuring >= 4.5:1 text contrast */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[55%]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[60%]"
         style={{
           background:
-            "linear-gradient(to top, rgba(35, 45, 34, 0.78) 0%, rgba(35, 45, 34, 0.7) 35%, transparent 100%)",
+            "linear-gradient(to top, rgba(35, 45, 34, 0.78) 0%, rgba(35, 45, 34, 0.56) 55%, transparent 100%)",
         }}
       />
 
-      {/* Bottom-left display title and caption sentence */}
+      {/* Bottom-left display title and caption sentence with safe insets (position: static so lg:absolute chip hugs layer edges) */}
       <div
-        className={
-          isPinned
-            ? "relative z-20 px-5 pb-14 pt-28 md:px-10 md:pb-16"
-            : "relative z-20 px-5 pb-20 pt-28 md:px-10 md:pb-16"
-        }
+        style={{ padding: "7rem clamp(1.5rem, 5vw, 5rem) clamp(2rem, 7svh, 5rem)" }}
+        className="z-20 flex flex-col"
       >
         <h2
           id={`${item.id}-title`}
           ref={(el) => {
             refs.title = el;
           }}
-          className="max-w-[90vw] font-serif text-[clamp(3.25rem,15vw,5rem)] leading-[0.95] text-linen lg:text-[clamp(4rem,12vw,13rem)]"
+          className={
+            isPinned
+              ? "max-w-[calc(100vw-2*clamp(1.5rem,5vw,5rem))] font-serif text-[clamp(3rem,14vw,5rem)] leading-[0.95] text-linen lg:text-[clamp(4rem,12vw,13rem)]"
+              : "font-serif text-[clamp(3rem,14vw,5rem)] leading-[0.95] text-linen lg:text-[clamp(4rem,12vw,13rem)]"
+          }
         >
           {item.title}
         </h2>
@@ -165,22 +166,23 @@ function ServiceLayer({
           ref={(el) => {
             refs.caption = el;
           }}
-          className={
-            isPinned
-              ? "mt-4 max-w-[min(44rem,calc(100vw-clamp(30rem,44vw,46rem)-5rem))] font-sans text-[1.1667rem] uppercase leading-[1.45] tracking-[0.06em] text-linen/95"
-              : "mt-4 max-w-[44rem] font-sans text-[1.1667rem] uppercase leading-[1.45] tracking-[0.06em] text-linen/95"
-          }
+          style={{
+            maxWidth: isPinned
+              ? "min(36rem, calc(100vw - clamp(30rem, 44vw, 46rem) - clamp(1.5rem, 5vw, 5rem) - 2rem))"
+              : "36rem",
+          }}
+          className="mt-4 font-sans text-[1.1667rem] uppercase leading-[1.45] tracking-[0.06em] text-linen/95"
         >
           {item.caption}
         </p>
-      </div>
 
-      {/* Concept visualization caption on image layers only */}
-      {item.image && (
-        <span className="concept-chip pointer-events-none absolute bottom-4 right-5 z-20 md:bottom-6 md:right-10">
-          {BRAND.imageLabel}
-        </span>
-      )}
+        {/* Concept visualization caption on image layers only: above title on narrow screens, bottom-right 1.25rem on lg+ */}
+        {item.image && (
+          <span className="concept-chip pointer-events-none order-first mb-4 self-start lg:order-none lg:mb-0 lg:absolute lg:bottom-5 lg:right-5">
+            {BRAND.imageLabel}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -208,14 +210,7 @@ function ServicePanel({
       }}
       data-theme={isPinned ? undefined : isGreen ? "dark" : "light"}
       onFocusCapture={isPinned ? onPanelFocus : undefined}
-      style={
-        isPinned
-          ? {
-              padding:
-                "clamp(4.5rem, 8.5vh, 5.5rem) clamp(1.5rem, 3.6vw, 3.5rem) clamp(1.25rem, 3.5vh, 2.75rem)",
-            }
-          : { padding: "clamp(1.5rem, 5vw, 4rem)" }
-      }
+      style={{ padding: "clamp(2rem, 3.5vw, 4rem)" }}
       className={
         isPinned
           ? `absolute right-0 top-0 z-10 flex h-[100svh] w-[clamp(30rem,44vw,46rem)] flex-col justify-center ${
@@ -236,7 +231,7 @@ function ServicePanel({
           {item.paragraph}
         </p>
 
-        <ul className={isPinned ? "mt-[clamp(1rem,2.4vh,1.75rem)]" : "mt-8"}>
+        <ul className="mt-6">
           {item.lines.map((line, idx) => (
             <li key={idx}>
               <span
@@ -252,8 +247,8 @@ function ServicePanel({
                 }}
                 className={
                   isPinned
-                    ? "py-[clamp(0.55rem,1.4vh,1.05rem)] font-serif text-[clamp(1.1rem,min(1.65vw,2.55vh),1.75rem)] leading-[1.32]"
-                    : "py-5 font-serif text-[clamp(1.35rem,1.9vw,2rem)] leading-[1.35]"
+                    ? "py-4 font-serif text-[clamp(1.0625rem,min(1.55vw,2.2vh),1.65rem)] leading-[1.32]"
+                    : "py-4 font-serif text-[clamp(1.3rem,1.9vw,1.9rem)] leading-[1.35]"
                 }
               >
                 {line}
@@ -275,9 +270,7 @@ function ServicePanel({
             ref={(el) => {
               refs.closing = el;
             }}
-            className={`${
-              isPinned ? "mt-[clamp(0.85rem,2vh,1.5rem)]" : "mt-8"
-            } max-w-[46rem] font-sans text-[1.1667rem] leading-[1.58] ${
+            className={`mt-8 max-w-[46rem] font-sans text-[1.1667rem] leading-[1.58] ${
               isGreen ? "text-linen/90" : "text-ink/85"
             }`}
           >
@@ -289,7 +282,7 @@ function ServicePanel({
           ref={(el) => {
             refs.cta = el;
           }}
-          className={isPinned ? "mt-[clamp(1rem,2.3vh,1.75rem)]" : "mt-9"}
+          className="mt-8"
         >
           {variant === "home" ? (
             <VeilLink
@@ -972,6 +965,13 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
               refs={refs}
               onPanelFocus={() => handlePanelFocus(idx)}
             />
+            {!isPinned && idx < servicesShowcase.length - 1 && (
+              <div
+                aria-hidden="true"
+                style={{ height: "clamp(1.5rem, 5vw, 3rem)" }}
+                className={item.theme === "green" ? "w-full bg-forest" : "w-full bg-linen"}
+              />
+            )}
           </section>
         );
       })}
@@ -979,7 +979,7 @@ export function ServicesShowcase({ variant }: ServicesShowcaseProps) {
       {isPinned && (
         <nav
           aria-label="Services index"
-          className="pointer-events-auto absolute left-5 top-[42%] z-20 flex -translate-y-1/2 flex-col md:left-10"
+          className="pointer-events-auto absolute left-[clamp(0.75rem,1.6vw,1.5rem)] top-[5.5rem] z-20 flex flex-col"
         >
           {servicesShowcase.map((item, idx) => {
             const isActive = activeIndex === idx;

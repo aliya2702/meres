@@ -8,3 +8,4 @@ Drop optional concept visualization images for the **Bathrooms** and **Additions
 - `additions.(jpg|jpeg|png|webp)` — landscape `16:9`, at least `1672px` wide
 
 While a file is absent, the showcase renders the green-to-taupe tonal fallback with the MERES mark and omits the `"Concept visualization"` caption.
+
