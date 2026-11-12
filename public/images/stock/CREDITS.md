@@ -24,3 +24,4 @@ All 20 images in `/public/images/stock/` are royalty-free photographs sourced ex
 | `M4` | materials | `2000x1333` | `313.5 KB` | Pawel Czerwinski | Unsplash | Unsplash License | https://unsplash.com/photos/travertine-tiles-with-natural-texture-ZYU__rpviq0 |
 | `L1` | living | `2000x1286` | `339.5 KB` | Vecislavas Popa | Pexels | Pexels License | https://www.pexels.com/photo/luxurious-living-room-with-modern-interior-design-featuring-beige-sofa-fireplace-and-open-kitchen-1571460/ |
 | `L2` | living | `2000x1317` | `330.0 KB` | Vecislavas Popa | Pexels | Pexels License | https://www.pexels.com/photo/interior-design-of-a-house-1643383/ |
+
