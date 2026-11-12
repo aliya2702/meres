@@ -1,0 +1,185 @@
+/* Scoped styles for the rebuilt /about page only.
+ * Leaves global styles, Home, Services, Our approach, Contact, Header, Menu, PageVeil, and Footer untouched. */
+
+.about-page {
+  --about-panel-radius: 0px;
+}
+
+.about-stack > .panel {
+  border-radius: var(--about-panel-radius);
+}
+
+@media (min-width: 1024px) {
+  .about-stack > .panel {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  .about-stack > .panel.about-sequence-panel {
+    position: relative;
+    height: 400svh;
+    min-height: 400svh;
+    overflow: visible;
+  }
+
+  .about-sequence-stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-stack > .panel.about-sequence-panel {
+    position: relative !important;
+    height: auto !important;
+    min-height: 100svh !important;
+  }
+
+  .about-sequence-stage {
+    position: relative !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .about-page [data-drift],
+  .about-page .frame-drift {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Scrims (40-55% ink beneath headlines over imagery) */
+.about-scrim-bl {
+  background: linear-gradient(
+    to top,
+    rgba(35, 45, 34, 0.55) 0%,
+    rgba(35, 45, 34, 0.26) 44%,
+    rgba(35, 45, 34, 0) 76%
+  );
+}
+
+.about-scrim-corner {
+  background: radial-gradient(
+    ellipse at 12% 92%,
+    rgba(35, 45, 34, 0.54) 0%,
+    rgba(35, 45, 34, 0.22) 48%,
+    rgba(35, 45, 34, 0) 78%
+  );
+}
+
+/* Gentle CSS bob for hero scroll cue */
+@keyframes aboutArrowBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+.about-arrow-bob {
+  animation: aboutArrowBob 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-arrow-bob {
+    animation: none;
+  }
+}
+
+/* Green-scene opposite organic drifts */
+@keyframes aboutDriftA {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(10px, -16px, 0);
+  }
+}
+
+@keyframes aboutDriftB {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-12px, 14px, 0);
+  }
+}
+
+@keyframes aboutDriftC {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(8px, 18px, 0);
+  }
+}
+
+@keyframes aboutDriftD {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-10px, -14px, 0);
+  }
+}
+
+.about-drift-a {
+  animation: aboutDriftA 11s ease-in-out infinite alternate;
+}
+
+.about-drift-b {
+  animation: aboutDriftB 13s ease-in-out infinite alternate;
+}
+
+.about-drift-c {
+  animation: aboutDriftC 12s ease-in-out infinite alternate;
+}
+
+.about-drift-d {
+  animation: aboutDriftD 14s ease-in-out infinite alternate;
+}
+
+/* Filmstrip hover lift & sibling dim */
+.about-filmstrip-item {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    filter 0.45s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .about-filmstrip-row:hover .about-filmstrip-item:not(:hover) {
+    opacity: 0.6;
+  }
+
+  .about-filmstrip-row .about-filmstrip-item:hover {
+    transform: translateY(-12px);
+    opacity: 1;
+    filter: brightness(1.04);
+  }
+}
+
+/* Subtle bottom-right visualization badge */
+.about-caption-chip {
+  background: rgba(35, 45, 34, 0.56);
+  color: rgba(232, 222, 206, 0.88);
+  backdrop-filter: blur(6px);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Debug outlines when ?debug=1 is present */
+.about-stack[data-debug="1"] .about-debug-outline {
+  outline: 1px dashed rgba(173, 150, 128, 0.65);
+}
+

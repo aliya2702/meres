@@ -1,25 +1,59 @@
-import { StackSection, Panel } from "@/components/StackSection";
-import { about } from "@/content/copy";
+import { useEffect } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { StackSection } from "../components/StackSection";
+import { AboutCursor } from "../components/about/AboutCursor";
+import { AboutHero } from "../components/about/AboutHero";
+import { AboutSplitStory } from "../components/about/AboutSplitStory";
+import { AboutHandoff } from "../components/about/AboutHandoff";
+import { AboutGreenScene } from "../components/about/AboutGreenScene";
+import { AboutSequence } from "../components/about/AboutSequence";
+import { AboutFilmstrip } from "../components/about/AboutFilmstrip";
+import { AboutClosing } from "../components/about/AboutClosing";
+import "../components/about/about.css";
 
-export default function AboutPage() {
+/**
+ * MERES — About page (/about).
+ * Image-led and animation-led sticky panel sequence (AB1–AB7).
+ */
+export function AboutPage() {
+  useEffect(() => {
+    const refresh = () => ScrollTrigger.refresh();
+    document.fonts?.ready.then(refresh).catch(() => {});
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("debug") !== "1") return;
+
+    const timer = window.setTimeout(() => {
+      const imgs = Array.from(
+        document.querySelectorAll<HTMLImageElement>(".about-page img")
+      );
+      const broken = imgs.filter((img) => img.complete && img.naturalWidth === 0);
+      if (broken.length > 0) {
+        console.warn("[about?debug=1] Broken images detected:", broken);
+      }
+      const panels = document.querySelectorAll(".about-page .panel");
+      console.info(
+        `[about?debug=1] Panels: ${panels.length}, Images: ${imgs.length}, Broken: ${broken.length}`
+      );
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
-    <StackSection>
-      <Panel zIndex={1} background="var(--linen)">
-        <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-          <p className="mb-4 text-xs uppercase tracking-[0.22em] text-forest">{about.eyebrow}</p>
-          <h1 className="headline-clamp font-serif text-ink">{about.title}</h1>
-        </div>
-      </Panel>
-      <Panel zIndex={2} background="var(--forest)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="headline-clamp font-serif text-linen text-center">{about.philosophy.title}</h2>
-        </div>
-      </Panel>
-      <Panel zIndex={3} background="var(--linen)">
-        <div className="flex h-full items-center justify-center px-8">
-          <h2 className="lead-clamp font-serif text-ink text-center">{about.region}</h2>
-        </div>
-      </Panel>
-    </StackSection>
+    <div className="about-page relative">
+      <AboutCursor />
+      <StackSection className="about-stack">
+        <AboutHero />
+        <AboutSplitStory />
+        <AboutHandoff />
+        <AboutGreenScene />
+        <AboutSequence />
+        <AboutFilmstrip />
+        <AboutClosing />
+      </StackSection>
+    </div>
   );
 }
+
+export default AboutPage;
