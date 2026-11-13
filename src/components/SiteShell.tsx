@@ -8,6 +8,7 @@ import { MeresMark } from "@/components/MeresMark";
 import { VeilLink, useVeilNavigate } from "@/components/VeilLink";
 import { magnetic } from "@/motion/helpers";
 import { lenis } from "@/motion/smooth";
+import { img } from "@/data/images";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -104,7 +105,8 @@ export function Header() {
     };
     document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
-    document.querySelector<HTMLElement>("[data-menu-dialog] a")?.focus();
+    const dialog = document.querySelector<HTMLElement>("[data-menu-dialog]");
+    dialog?.focus();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
@@ -147,9 +149,18 @@ export function Header() {
   );
 }
 
+const MENU_PREVIEWS: Record<string, string> = {
+  "/services": "K1",
+  "/approach": "D1",
+  "/about": "M1",
+  "contact": "E1",
+};
+
 function MenuDialog({ onClose, onContact }: { onClose: () => void; onContact: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
   const links = useRef<HTMLDivElement>(null);
+  const [activeImageId, setActiveImageId] = useState<string>("E1");
+
   useEffect(() => {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
@@ -161,20 +172,66 @@ function MenuDialog({ onClose, onContact }: { onClose: () => void; onContact: ()
     });
     return () => mm.revert();
   }, []);
+
+  const previewList = ["K1", "D1", "M1", "E1"];
+
   return (
-    <div id="site-menu" data-menu-dialog role="dialog" aria-modal="true" aria-label="Site menu" className="fixed inset-0 z-30 grid bg-forest text-linen md:grid-cols-2">
+    <div id="site-menu" data-menu-dialog tabIndex={-1} role="dialog" aria-modal="true" aria-label="Site menu" className="fixed inset-0 z-30 grid bg-forest text-linen outline-none md:grid-cols-2">
       <div ref={panel} className="flex flex-col justify-end px-7 pb-12 pt-32 md:px-16 md:pb-16">
         <p className="mb-8 text-xs uppercase tracking-[0.22em] text-taupe">MERES · Seattle's Eastside</p>
-        <nav ref={links} className="flex flex-col items-start gap-4" aria-label="Main navigation">
-          {BRAND.nav.map((item) => <VeilLink key={item.href} to={item.href} onClick={onClose} data-cursor="link" className="font-serif text-4xl transition-opacity hover:text-taupe md:text-6xl">{item.label}</VeilLink>)}
-          <button type="button" onClick={onContact} data-cursor="link" className="font-serif text-4xl transition-opacity hover:text-taupe md:text-6xl">Contact</button>
+        <nav
+          ref={links}
+          className="flex flex-col items-start gap-4"
+          aria-label="Main navigation"
+          onMouseLeave={() => setActiveImageId("E1")}
+        >
+          {BRAND.nav.map((item) => (
+            <VeilLink
+              key={item.href}
+              to={item.href}
+              onClick={onClose}
+              data-cursor="link"
+              onMouseEnter={() => setActiveImageId(MENU_PREVIEWS[item.href] || "E1")}
+              onFocus={() => setActiveImageId(MENU_PREVIEWS[item.href] || "E1")}
+              className="font-serif text-4xl transition-opacity hover:text-taupe md:text-6xl"
+            >
+              {item.label}
+            </VeilLink>
+          ))}
+          <button
+            type="button"
+            onClick={onContact}
+            data-cursor="link"
+            onMouseEnter={() => setActiveImageId("E1")}
+            onFocus={() => setActiveImageId("E1")}
+            className="font-serif text-4xl transition-opacity hover:text-taupe md:text-6xl"
+          >
+            Contact
+          </button>
         </nav>
         <div className="mt-12 flex items-end justify-between gap-6 border-t border-linen/20 pt-5 text-sm text-linen/70">
           <span>{BRAND.philosophy}</span>
           <button type="button" onClick={onClose} className="text-xs uppercase tracking-[0.16em] text-taupe">Close</button>
         </div>
       </div>
-      <div className="hidden bg-linen-deep md:block" aria-hidden="true" />
+      <div className="relative hidden h-full w-full overflow-hidden bg-forest md:block" aria-hidden="true">
+        {previewList.map((id) => {
+          const photo = img(id);
+          if (!photo) return null;
+          return (
+            <img
+              key={id}
+              src={photo.src}
+              alt={photo.alt}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+                activeImageId === id ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              }`}
+            />
+          );
+        })}
+        {/* Subtle dark gradient overlay */}
+        <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-forest/60 via-transparent to-forest/30" />
+      </div>
     </div>
   );
 }

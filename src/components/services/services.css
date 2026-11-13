@@ -1,0 +1,150 @@
+/* MERES Services Page Styles */
+
+/* Crucial: No overflow hidden/clip or transforms on .services-page container so sticky works */
+.services-page {
+  position: relative;
+  width: 100%;
+  background-color: var(--linen, #E8DECE);
+  color: var(--forest, #2C382A);
+}
+
+/* Intro stack panels (V1 - V9) must self-contain overflow */
+.services-intro-stack {
+  position: relative;
+  width: 100%;
+}
+
+.services-intro-stack > .panel,
+.services-intro-stack [data-panel-content],
+.services-intro-stack [data-panel-timeline] {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .services-intro-stack > .panel {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .services-intro-stack > .panel {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+}
+
+/* Service Sections (V10 - V13) */
+.service {
+  position: relative;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .service {
+    height: 240svh;
+    /* Do NOT put overflow hidden here on desktop so sticky pins */
+  }
+
+  .service-sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 767px) {
+  .service {
+    height: auto !important;
+    overflow: hidden !important;
+  }
+
+  .service-sticky {
+    position: relative !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .service-image {
+    position: relative !important;
+    width: 100% !important;
+    height: 60svh !important;
+    clip-path: none !important;
+  }
+
+  .service-column {
+    position: relative !important;
+    width: 100% !important;
+    transform: none !important;
+    padding: 3rem 1.5rem !important;
+  }
+
+  .service-title {
+    bottom: 1.5rem !important;
+    left: 1.5rem !important;
+    transform: none !important;
+  }
+}
+
+/* Concept chip badge */
+.services-concept-chip {
+  font-family: var(--font-sans, "DM Sans", sans-serif);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #E8DECE;
+  background: rgba(27, 33, 26, 0.72);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(232, 222, 206, 0.15);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Warm tint overlay for unified imagery */
+.services-warm-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: #AD9680;
+  mix-blend-mode: multiply;
+  opacity: 0.08;
+  z-index: 2;
+}
+
+/* Drifting radial blob keyframes */
+@keyframes blob-drift-services {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(3vw, -4vh) scale(1.08);
+  }
+  66% {
+    transform: translate(-3vw, 3vh) scale(0.94);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.services-blob {
+  animation: blob-drift-services 18s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-blob {
+    animation: none !important;
+  }
+}

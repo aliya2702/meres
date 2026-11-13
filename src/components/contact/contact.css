@@ -1,0 +1,155 @@
+/* MERES Contact Page Styles */
+
+/* Form Drawer scrollbar hidden */
+.contact-drawer-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+
+.contact-drawer-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Floating underline field wrapper */
+.contact-field-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Underline border track */
+.contact-input-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: rgba(232, 222, 206, 0.35);
+  pointer-events: none;
+  transition: background-color 0.25s ease;
+}
+
+/* Animated focus underline: 2px taupe drawn left to right in 0.5s */
+.contact-input-highlight {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #AD9680;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contact-field-wrap:focus-within .contact-input-highlight {
+  transform: scaleX(1);
+}
+
+/* Form input element: minimum 16px, high contrast */
+.contact-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 0 10px 0;
+  font-family: var(--font-sans, "DM Sans", sans-serif);
+  font-size: 16px;
+  line-height: 1.5;
+  color: #E8DECE;
+  outline: none;
+  border-radius: 0;
+}
+
+.contact-input::placeholder {
+  color: rgba(232, 222, 206, 0.45);
+  font-size: 15px;
+}
+
+/* Label: 13-14px, high contrast (at least 4.5:1) */
+.contact-label {
+  display: block;
+  font-family: var(--font-sans, "DM Sans", sans-serif);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #E8DECE;
+  transition: transform 0.35s ease, color 0.35s ease;
+  transform-origin: left bottom;
+}
+
+.contact-field-wrap:focus-within .contact-label {
+  color: #AD9680;
+}
+
+/* Select specific styling */
+.contact-select {
+  appearance: none;
+  cursor: pointer;
+  background-color: transparent;
+  color: #E8DECE;
+}
+
+.contact-select option {
+  background-color: #2C382A;
+  color: #E8DECE;
+  padding: 8px 12px;
+}
+
+/* Submit magnetic pill sweep */
+.contact-submit-sweep {
+  position: absolute;
+  inset: 0;
+  background-color: #F2ECE1;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.contact-submit-btn:hover .contact-submit-sweep {
+  clip-path: inset(0 0% 0 0);
+}
+
+/* Collage subtle drift animations */
+@keyframes collageDriftA {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0.8vw, -0.6vh, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes collageDriftB {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-0.8vw, 0.6vh, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.collage-drift-a {
+  animation: collageDriftA 12s ease-in-out infinite alternate;
+}
+
+.collage-drift-b {
+  animation: collageDriftB 14s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collage-drift-a,
+  .collage-drift-b {
+    animation: none !important;
+  }
+  .contact-input-highlight {
+    transition: none !important;
+  }
+}
+

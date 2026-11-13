@@ -1,0 +1,145 @@
+/* Scoped styles for the rebuilt Home page (/), panels H2-H15.
+ * Leaves the Hero panel, Header, Menu, PageVeil, Footer, Services, About, Approach, and Contact untouched. */
+
+.home-page {
+  --home-linen: #E8DECE;
+  --home-forest: #2C382A;
+  --home-taupe: #AD9680;
+  --home-dark: #1B211A;
+}
+
+/* Desktop sticky panels */
+@media (min-width: 1024px) {
+  .home-stack > .panel:not(.home-gallery-panel) {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  .home-stack > .panel.home-gallery-panel {
+    position: relative;
+    height: 300svh;
+    min-height: 300svh;
+    overflow: visible;
+  }
+
+  .home-gallery-stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Mobile natural flow */
+@media (max-width: 1023px) {
+  .home-stack > .panel {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  .home-stack > .panel.home-gallery-panel {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .home-gallery-stage {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+}
+
+/* Reduced motion guarantees */
+@media (prefers-reduced-motion: reduce) {
+  .home-stack > .panel {
+    position: relative !important;
+    height: auto !important;
+    min-height: 100svh !important;
+    overflow: visible !important;
+  }
+
+  .home-stack > .panel.home-gallery-panel {
+    height: auto !important;
+  }
+
+  .home-gallery-stage {
+    position: relative !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .home-page [data-anim-from],
+  .home-page [data-text-line],
+  .home-page .home-blob-anim,
+  .home-page .home-hairline-loop {
+    animation: none !important;
+    transform: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Scrims for text contrast over imagery */
+.home-scrim-bl {
+  background: linear-gradient(
+    to top,
+    rgba(27, 33, 26, 0.76) 0%,
+    rgba(27, 33, 26, 0.38) 46%,
+    rgba(27, 33, 26, 0) 80%
+  );
+}
+
+.home-scrim-tr {
+  background: linear-gradient(
+    to bottom left,
+    rgba(27, 33, 26, 0.72) 0%,
+    rgba(27, 33, 26, 0.32) 42%,
+    rgba(27, 33, 26, 0) 75%
+  );
+}
+
+.home-scrim-25 {
+  background: rgba(27, 33, 26, 0.25);
+}
+
+.home-scrim-35 {
+  background: rgba(27, 33, 26, 0.35);
+}
+
+.home-scrim-55 {
+  background: rgba(27, 33, 26, 0.55);
+}
+
+/* Ambient gradient blob animation */
+@keyframes homeBlobDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5vw, -2vh, 0) scale(1.06);
+  }
+}
+
+.home-blob-anim {
+  animation: homeBlobDrift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Flowing hairline loop */
+@keyframes homeDashFlow {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+.home-hairline-loop {
+  stroke-dasharray: 12 8;
+  animation: homeDashFlow 40s linear infinite;
+}
+

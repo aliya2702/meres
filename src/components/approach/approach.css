@@ -1,0 +1,189 @@
+/* Scoped styles for the rebuilt /approach page only.
+ * Leaves global styles, Home, Services, About, Contact, Header, Menu, PageVeil, and Footer untouched. */
+
+.approach-page {
+  --approach-linen: #E8DECE;
+  --approach-forest: #2C382A;
+  --approach-taupe: #AD9680;
+  --approach-dark: #1B211A;
+  --approach-teal: #1f302b;
+}
+
+/* Sticky stacking on desktop */
+@media (min-width: 1024px) {
+  .approach-stack > .panel {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .approach-stack > .panel {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+}
+
+/* Reduced motion guarantee: everything is static and fully visible */
+@media (prefers-reduced-motion: reduce) {
+  .approach-stack > .panel {
+    position: relative !important;
+    height: auto !important;
+    min-height: 100svh !important;
+    overflow: visible !important;
+  }
+
+  .approach-page [data-anim-from],
+  .approach-page [data-text-line],
+  .approach-page .giant-numeral,
+  .approach-page .hotspot-ring,
+  .approach-page .approach-drift {
+    animation: none !important;
+    transform: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Left edge progress line track and indicator */
+.approach-progress-rail {
+  position: fixed;
+  left: clamp(14px, 2.4vw, 36px);
+  top: 15vh;
+  bottom: 15vh;
+  width: 1px;
+  background: rgba(173, 150, 128, 0.22);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.approach-progress-bar {
+  width: 100%;
+  height: 0%;
+  background: var(--approach-taupe);
+  transition: height 0.1s linear;
+}
+
+/* Giant outlined numerals */
+.giant-numeral {
+  font-family: var(--font-caslon, "Libre Caslon Display", Georgia, serif);
+  font-size: clamp(8rem, 24vw, 24rem);
+  line-height: 0.78;
+  font-weight: 400;
+  user-select: none;
+  pointer-events: none;
+  letter-spacing: -0.05em;
+}
+
+.giant-numeral-dark {
+  -webkit-text-stroke: 1.5px rgba(232, 222, 206, 0.28);
+  color: transparent;
+  transition: color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.giant-numeral-dark.numeral-filled {
+  color: rgba(232, 222, 206, 0.12);
+}
+
+.giant-numeral-light {
+  -webkit-text-stroke: 1.5px rgba(44, 56, 42, 0.24);
+  color: transparent;
+  transition: color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.giant-numeral-light.numeral-filled {
+  color: rgba(44, 56, 42, 0.08);
+}
+
+/* Scrims */
+.approach-scrim-bl {
+  background: linear-gradient(
+    to top,
+    rgba(27, 33, 26, 0.72) 0%,
+    rgba(27, 33, 26, 0.38) 42%,
+    rgba(27, 33, 26, 0) 78%
+  );
+}
+
+.approach-scrim-35 {
+  background: rgba(27, 33, 26, 0.35);
+}
+
+.approach-scrim-top {
+  background: linear-gradient(
+    to bottom,
+    rgba(27, 33, 26, 0.65) 0%,
+    rgba(27, 33, 26, 0.25) 45%,
+    transparent 80%
+  );
+}
+
+/* Subtle organic gradient drifts */
+@keyframes approachBlobDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3vw, -2.5vh, 0) scale(1.08);
+  }
+}
+
+.approach-blob-anim {
+  animation: approachBlobDrift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Hotspots on Step 5 */
+.approach-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 25;
+}
+
+.hotspot-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #E8DECE;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hotspot-ring {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(232, 222, 206, 0.75);
+  animation: hotspotPulse 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes hotspotPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.approach-hotspot:hover .hotspot-dot {
+  transform: scale(1.4);
+}
+
+/* Filmstrip card hover dimming */
+.filmstrip-group:hover .filmstrip-card:not(:hover) {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
