@@ -1,5 +1,5 @@
 import { AnchorHTMLAttributes, MouseEvent, forwardRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useHref, useLocation, useNavigate } from "react-router-dom";
 import { veil } from "../gl/PageVeil";
 import { scrollToTarget, lenis } from "../motion/smooth";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -11,9 +11,15 @@ export function useVeilNavigate() {
   const location = useLocation();
   return useCallback(async (to: string, origin: [number, number] = [0.5, 0.5]) => {
     const url = new URL(to, window.location.origin);
-    if (url.pathname === location.pathname) {
+    const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+    let targetPath = url.pathname;
+    if (base && targetPath.startsWith(base)) {
+      targetPath = targetPath.slice(base.length) || "/";
+    }
+
+    if (targetPath === location.pathname) {
       if (url.hash) {
-        history.replaceState(null, "", url.pathname + url.hash);
+        history.replaceState(null, "", (base ? base : "") + targetPath + url.hash);
         const targetId = url.hash.slice(1);
         scrollToTarget(url.hash, {
           duration: 1.3,
@@ -31,7 +37,7 @@ export function useVeilNavigate() {
       const target = trigger.trigger as Element | undefined;
       if (!target || document.getElementById("main")?.contains(target)) trigger.kill();
     });
-    navigate(url.pathname + url.hash);
+    navigate(targetPath + url.hash);
     await raf2();
     window.scrollTo(0, 0);
     await new Promise((resolve) => window.setTimeout(resolve, 80));
@@ -49,6 +55,7 @@ export function useVeilNavigate() {
 
 type Props = AnchorHTMLAttributes<HTMLAnchorElement> & { to: string };
 export const VeilLink = forwardRef<HTMLAnchorElement, Props>(function VeilLink({ to, onClick, children, ...rest }, ref) {
+  const href = useHref(to);
   const go = useVeilNavigate();
   const handle = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
@@ -56,5 +63,5 @@ export const VeilLink = forwardRef<HTMLAnchorElement, Props>(function VeilLink({
     event.preventDefault();
     void go(to, [event.clientX / window.innerWidth, event.clientY / window.innerHeight]);
   }, [go, onClick, to]);
-  return <a ref={ref} href={to} onClick={handle} {...rest}>{children}</a>;
+  return <a ref={ref} href={href} onClick={handle} {...rest}>{children}</a>;
 });

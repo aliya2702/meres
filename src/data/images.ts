@@ -15,7 +15,7 @@ export type LibImage = {
 
 export const STOCK_LABEL = "Illustrative image";
 
-export const IMAGES: LibImage[] = [
+const RAW_IMAGES: LibImage[] = [
   {
     id: "K1",
     category: "kitchens",
@@ -581,6 +581,18 @@ export const IMAGES: LibImage[] = [
     license: "Unsplash License",
   },
 ];
+
+const resolveAsset = (p: string) => {
+  if (p.startsWith("http://") || p.startsWith("https://") || p.startsWith("data:")) return p;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const cleanPath = p.replace(/^\/+/, "");
+  return base ? `${base}/${cleanPath}` : `/${cleanPath}`;
+};
+
+export const IMAGES: LibImage[] = RAW_IMAGES.map((item) => ({
+  ...item,
+  src: resolveAsset(item.src),
+}));
 
 export const img = (id: string) => IMAGES.find((i) => i.id === id)!;
 

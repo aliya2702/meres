@@ -550,7 +550,7 @@ export const ServicesIntro = forwardRef<ServicesIntroHandle, ServicesIntroProps>
       id: string,
     ) => {
       event.preventDefault();
-      window.history.replaceState(null, "", `/services#${id}`);
+      window.history.replaceState(null, "", `${window.location.pathname}#${id}`);
       if (onSelectService) {
         onSelectService(idx, id);
       } else {
@@ -742,7 +742,7 @@ export const ServicesIntro = forwardRef<ServicesIntroHandle, ServicesIntroProps>
                     />
                     <IntroRollingLink
                       label={section.title}
-                      href={`/services#${section.id}`}
+                      href={`#${section.id}`}
                       isInkOnLinen
                       linkRef={(el) => {
                         refs.current.panelLinkRows[idx] = el;

@@ -1,0 +1,26 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/meres_v5/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/meres_v5/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/meres_v5/brand/:path*",
+      "destination": "/brand/:path*"
+    },
+    {
+      "source": "/meres_v5/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+

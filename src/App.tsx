@@ -46,7 +46,7 @@ function AppFrame() {
 
   useEffect(() => {
     const main = mainRef.current;
-    const cleanupAttrs = main ? initMotionAttributes(main) : () => {};
+    const cleanupAttrs = main ? initMotionAttributes(main) : () => { };
 
     if (firstMount.current) {
       firstMount.current = false;
@@ -94,5 +94,20 @@ function AppFrame() {
 }
 
 export default function App() {
-  return <BrowserRouter><AppFrame /></BrowserRouter>;
+  const base = "/meres_v5";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p === "" || p === "/") {
+        window.location.replace(`${base}/${window.location.search}${window.location.hash}`);
+      }
+    }
+  }, []);
+
+  return (
+    <BrowserRouter basename={base}>
+      <AppFrame />
+    </BrowserRouter>
+  );
 }

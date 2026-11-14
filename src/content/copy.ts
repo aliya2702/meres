@@ -27,12 +27,12 @@ export const BRAND = {
     { id: "additions-custom-homes", label: "Additions & custom homes", href: "/services#additions-custom-homes", link: "Explore additions & custom homes" },
   ],
   images: {
-    kitchenHero: { src: "/images/01_MERES_Kitchen_Hero_Visualization.png", alt: "Walnut kitchen with a stone island and upholstered counter seating." },
-    kitchenWide: { src: "/images/02_MERES_Kitchen_Wide_Visualization.png", alt: "Kitchen island with stone worktop, pendant lighting, and a connected dining area." },
-    diningNook: { src: "/images/03_MERES_Dining_Nook_Visualization.png", alt: "Dining nook with an open book, upholstered seating, and glazed doors to a garden." },
-    kitchenDetail: { src: "/images/04_MERES_Kitchen_Detail_Visualization.png", alt: "Walnut cabinetry, a stone backsplash, a range, and a brass-toned kitchen faucet." },
-    wineBar: { src: "/images/05_MERES_Wine_Bar_Visualization.png", alt: "Dark stone home bar with wine storage and warm wall lighting." },
-    secondKitchen: { src: "/images/06_MERES_Second_Kitchen_Visualization.png", alt: "Kitchen with a broad island, four counter stools, walnut cabinetry, and pendant lighting." },
+    kitchenHero: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/01_MERES_Kitchen_Hero_Visualization.png`, alt: "Walnut kitchen with a stone island and upholstered counter seating." },
+    kitchenWide: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/02_MERES_Kitchen_Wide_Visualization.png`, alt: "Kitchen island with stone worktop, pendant lighting, and a connected dining area." },
+    diningNook: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/03_MERES_Dining_Nook_Visualization.png`, alt: "Dining nook with an open book, upholstered seating, and glazed doors to a garden." },
+    kitchenDetail: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/04_MERES_Kitchen_Detail_Visualization.png`, alt: "Walnut cabinetry, a stone backsplash, a range, and a brass-toned kitchen faucet." },
+    wineBar: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/05_MERES_Wine_Bar_Visualization.png`, alt: "Dark stone home bar with wine storage and warm wall lighting." },
+    secondKitchen: { src: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/images/06_MERES_Second_Kitchen_Visualization.png`, alt: "Kitchen with a broad island, four counter stools, walnut cabinetry, and pendant lighting." },
   },
 } as const;
 

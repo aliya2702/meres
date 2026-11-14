@@ -3,7 +3,7 @@
 // There is NO bathroom imagery. Never use a kitchen image to represent bathrooms.
 // Native width 1672px: never scale above ~1.08 on top of cover-fit at 1920px+ and never use as 2x-zoomed crop.
 // NOTE: only the 1672px WebP is supplied (one file per image). LQIP is an inline data URI.
-export const images = [
+const RAW_IMAGES = [
   {
     "id": "kitchen-hero",
     "order": 1,
@@ -119,4 +119,19 @@ export const images = [
     "recommendedUse": "Secondary kitchen / supporting gallery"
   }
 ] as const;
-export type ImageId = typeof images[number]['id'];
+
+export type ImageId = typeof RAW_IMAGES[number]['id'];
+
+const resolveAsset = (p: string) => {
+  if (p.startsWith("http://") || p.startsWith("https://") || p.startsWith("data:")) return p;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const cleanPath = p.replace(/^\/+/, "");
+  return base ? `${base}/${cleanPath}` : `/${cleanPath}`;
+};
+
+export const images = RAW_IMAGES.map((img) => ({
+  ...img,
+  src: {
+    "1672": resolveAsset(img.src["1672"]),
+  },
+}));
