@@ -278,7 +278,15 @@ export function TextRise({ children, className = "" }: { children: ReactNode; cl
  * (where StackSection looks for [data-anim-from] children to animate).
  */
 export function Panel({
-  children, className = "", zIndex = 0, background, theme, id, panelRise: panelRiseMode, panelRef,
+  children,
+  className = "",
+  zIndex = 0,
+  background,
+  theme,
+  id,
+  panelRise: panelRiseMode,
+  panelRef,
+  style,
 }: {
   children: ReactNode;
   className?: string;
@@ -288,6 +296,7 @@ export function Panel({
   id?: string;
   panelRise?: "auto" | "manual";
   panelRef?: Ref<HTMLElement>;
+  style?: CSSProperties;
 }) {
   return (
     <section
@@ -296,7 +305,7 @@ export function Panel({
       className={`panel ${className}`}
       data-theme={theme}
       data-panel-rise={panelRiseMode === "manual" ? "manual" : undefined}
-      style={{ zIndex, background: background || "var(--linen)" }}
+      style={{ zIndex, background: background || "var(--linen)", ...style }}
     >
       <div data-panel-content className="relative min-h-[100svh] w-full lg:absolute lg:inset-0 lg:min-h-0">
         <div data-panel-timeline className="relative min-h-[100svh] w-full lg:absolute lg:inset-0 lg:min-h-0">
